@@ -21,5 +21,6 @@ if ($id === '' || !ctype_digit($id)) {
 $stmt = db()->prepare('DELETE FROM daily_visits WHERE id = ?');
 $stmt->execute([(int)$id]);
 
+flash_set('success', 'تم الحذف');
 header('Location: ' . BASE_URL . '/reports.php');
 exit;

@@ -9,7 +9,7 @@ require_once __DIR__ . '/dropdowns.php';
 
 $user = current_user();
 
-$saved = isset($_GET['saved']);
+$flashSuccess = flash_get('success');
 $from = (string)($_GET['from'] ?? '');
 $to = (string)($_GET['to'] ?? '');
 
@@ -87,10 +87,27 @@ $dailyStmt = db()->prepare('SELECT dv.visit_date, COUNT(*) AS c FROM daily_visit
 $dailyStmt->execute($params);
 $dailyCounts = $dailyStmt->fetchAll();
 
-$sql = 'SELECT dv.*, u.username FROM daily_visits dv JOIN users u ON u.id = dv.user_id' . $whereSql . ' ORDER BY dv.visit_date DESC, dv.id DESC LIMIT ? OFFSET ?';
+$sql = 'SELECT dv.*, u.username, (SELECT COUNT(*) FROM daily_visit_contacts c WHERE c.daily_visit_id = dv.id) AS contacts_count
+        FROM daily_visits dv JOIN users u ON u.id = dv.user_id' . $whereSql . ' ORDER BY dv.visit_date DESC, dv.id DESC LIMIT ? OFFSET ?';
 $stmt = db()->prepare($sql);
 $stmt->execute(array_merge($params, [$per_page, $offset]));
 $rows = $stmt->fetchAll();
+
+$contactsByVisitId = [];
+if ($rows) {
+    $ids = array_map(static fn($r) => (int)$r['id'], $rows);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $cStmt = db()->prepare('SELECT daily_visit_id, person_name, job_title, mobile FROM daily_visit_contacts WHERE daily_visit_id IN (' . $placeholders . ') ORDER BY id ASC');
+    $cStmt->execute($ids);
+    $cRows = $cStmt->fetchAll();
+    foreach ($cRows as $c) {
+        $vid = (int)$c['daily_visit_id'];
+        if (!isset($contactsByVisitId[$vid])) {
+            $contactsByVisitId[$vid] = [];
+        }
+        $contactsByVisitId[$vid][] = $c;
+    }
+}
 
 $baseQuery = [
     'from' => $from,
@@ -116,6 +133,8 @@ if ($page < $totalPages) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= htmlspecialchars(APP_NAME) ?> - Reports</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link href="<?= htmlspecialchars(BASE_URL) ?>/assets/app.css" rel="stylesheet">
 </head>
 <body class="app-bg">
@@ -132,7 +151,7 @@ if ($page < $totalPages) {
             <?php if (is_admin($user)): ?>
                 <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/users.php">Users</a>
             <?php endif; ?>
-            <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/logout.php">Logout</a>
+            <a class="btn btn-sm btn-nav" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a>
         </div>
     </div>
 </nav>
@@ -143,8 +162,11 @@ if ($page < $totalPages) {
         <div class="text-muted small"><?= htmlspecialchars($user['username'] ?? '') ?></div>
     </div>
 
-    <?php if ($saved): ?>
-        <div class="alert alert-success">تم الحفظ</div>
+    <?php if ($flashSuccess !== null && $flashSuccess !== ''): ?>
+        <div id="flashSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
+            <?= htmlspecialchars($flashSuccess) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     <?php endif; ?>
 
     <div class="card shadow-sm app-card mb-3">
@@ -152,11 +174,11 @@ if ($page < $totalPages) {
             <form class="row g-3" method="get">
                 <div class="col-md-3">
                     <label class="form-label">من تاريخ</label>
-                    <input type="date" name="from" value="<?= htmlspecialchars($from) ?>" class="form-control">
+                    <input type="text" name="from" value="<?= htmlspecialchars($from) ?>" class="form-control js-date">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">إلى تاريخ</label>
-                    <input type="date" name="to" value="<?= htmlspecialchars($to) ?>" class="form-control">
+                    <input type="text" name="to" value="<?= htmlspecialchars($to) ?>" class="form-control js-date">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">الاسم</label>
@@ -249,11 +271,7 @@ if ($page < $totalPages) {
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th class="no-print">طباعة</th>
-                        <?php if (is_admin($user)): ?>
-                            <th class="no-print">تعديل</th>
-                            <th class="no-print">حذف</th>
-                        <?php endif; ?>
+                        <th class="no-print text-end">الإجراءات</th>
                         <th>المنطقة</th>
                         <th>اسم العيادة</th>
                         <th>اسم الشخص</th>
@@ -273,25 +291,61 @@ if ($page < $totalPages) {
                     <?php foreach ($rows as $r): ?>
                         <tr>
                             <td><?= (int)$r['id'] ?></td>
-                            <td class="no-print">
-                                <a class="btn btn-app-outline btn-sm" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&mode=single&id=<?= (int)$r['id'] ?>">طباعة</a>
+                            <td class="no-print text-end text-nowrap">
+                                <div class="d-flex justify-content-end">
+                                    <div class="btn-group" role="group">
+                                        <a class="btn btn-app-outline btn-sm" title="طباعة" aria-label="طباعة" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&mode=single&id=<?= (int)$r['id'] ?>">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
+                                        <?php if (is_admin($user)): ?>
+                                            <a class="btn btn-app-outline btn-sm" title="تعديل" aria-label="تعديل" href="<?= htmlspecialchars(BASE_URL) ?>/edit_report.php?id=<?= (int)$r['id'] ?>">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                            <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/delete_report.php" onsubmit="return confirm('حذف التقرير؟');" style="display:inline;">
+                                                <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                                                <button class="btn btn-danger btn-sm" type="submit" title="حذف" aria-label="حذف">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </td>
-                            <?php if (is_admin($user)): ?>
-                                <td class="no-print">
-                                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/edit_report.php?id=<?= (int)$r['id'] ?>">تعديل</a>
-                                </td>
-                                <td class="no-print">
-                                    <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/delete_report.php" onsubmit="return confirm('حذف التقرير؟');">
-                                        <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-                                        <button class="btn btn-danger btn-sm" type="submit">حذف</button>
-                                    </form>
-                                </td>
-                            <?php endif; ?>
                             <td><?= htmlspecialchars((string)$r['area']) ?></td>
                             <td><?= htmlspecialchars((string)$r['clinic_name']) ?></td>
-                            <td><?= htmlspecialchars((string)$r['person_name']) ?></td>
-                            <td class="d-none d-lg-table-cell"><?= htmlspecialchars((string)$r['job_title']) ?></td>
-                            <td class="d-none d-lg-table-cell text-nowrap"><?= htmlspecialchars((string)$r['mobile']) ?></td>
+                            <td>
+                                <?php $cs = $contactsByVisitId[(int)$r['id']] ?? []; ?>
+                                <?php if ($cs): ?>
+                                    <?php foreach ($cs as $c): ?>
+                                        <div>
+                                            <?= htmlspecialchars((string)($c['person_name'] ?? '')) ?>
+                                            <?php if ((string)($c['job_title'] ?? '') !== ''): ?>
+                                                <span class="text-muted">(<?= htmlspecialchars((string)$c['job_title']) ?>)</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <?= htmlspecialchars((string)$r['person_name']) ?>
+                                <?php endif; ?>
+                            </td>
+                            <td class="d-none d-lg-table-cell">
+                                <?php if ($cs): ?>
+                                    <?php foreach ($cs as $c): ?>
+                                        <div><?= htmlspecialchars((string)($c['job_title'] ?? '')) ?></div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <?= htmlspecialchars((string)$r['job_title']) ?>
+                                <?php endif; ?>
+                            </td>
+                            <td class="d-none d-lg-table-cell">
+                                <?php if ($cs): ?>
+                                    <?php foreach ($cs as $c): ?>
+                                        <div class="text-nowrap"><?= htmlspecialchars((string)($c['mobile'] ?? '')) ?></div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="text-nowrap"><?= htmlspecialchars((string)$r['mobile']) ?></div>
+                                <?php endif; ?>
+                            </td>
                             <td class="text-nowrap"><?= htmlspecialchars((string)$r['visit_date']) ?></td>
                             <td class="text-nowrap"><?= htmlspecialchars((string)$r['visit_number']) ?></td>
                             <td class="d-none d-lg-table-cell"><?= htmlspecialchars((string)$r['interest']) ?></td>
@@ -316,5 +370,51 @@ if ($page < $totalPages) {
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div class="d-flex justify-content-center mb-3">
+          <div class="rounded-circle border d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-width: 3px;">
+            <i class="bi bi-question-lg" style="font-size: 34px;"></i>
+          </div>
+        </div>
+        <div class="fw-semibold" style="font-size: 18px;">تأكيد تسجيل الخروج</div>
+        <div class="text-muted mt-2">هل أنت متأكد أنك تريد تسجيل الخروج؟</div>
+        <div class="d-flex justify-content-center gap-2 mt-4">
+          <a class="btn btn-danger px-3" href="<?= htmlspecialchars(BASE_URL) ?>/logout.php">نعم، تسجيل الخروج</a>
+          <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">إلغاء</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+(() => {
+  const el = document.getElementById('flashSuccess');
+  if (!el) return;
+  window.setTimeout(() => {
+    try {
+      const alert = bootstrap.Alert.getOrCreateInstance(el);
+      alert.close();
+    } catch (e) {
+      el.remove();
+    }
+  }, 2500);
+})();
+
+document.querySelectorAll('.js-date').forEach((el) => {
+  flatpickr(el, {
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'd/m/Y',
+    allowInput: true,
+  });
+});
+</script>
 </body>
 </html>

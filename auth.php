@@ -4,6 +4,27 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
 
+function flash_set(string $key, string $message): void
+{
+    if (!isset($_SESSION['flash']) || !is_array($_SESSION['flash'])) {
+        $_SESSION['flash'] = [];
+    }
+    $_SESSION['flash'][$key] = $message;
+}
+
+function flash_get(string $key): ?string
+{
+    if (!isset($_SESSION['flash']) || !is_array($_SESSION['flash'])) {
+        return null;
+    }
+    if (!array_key_exists($key, $_SESSION['flash'])) {
+        return null;
+    }
+    $msg = (string)$_SESSION['flash'][$key];
+    unset($_SESSION['flash'][$key]);
+    return $msg;
+}
+
 function current_user(): ?array
 {
     if (!isset($_SESSION['user_id'])) {

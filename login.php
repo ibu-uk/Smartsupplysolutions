@@ -10,6 +10,7 @@ if (current_user()) {
 }
 
 $error = '';
+$loggedOut = flash_get('logged_out');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim((string)($_POST['username'] ?? ''));
@@ -20,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!login_user($username, $password)) {
         $error = 'Invalid username or password.';
     } else {
+        flash_set('welcome', 'مرحباً بك في Smartsupplysolutions');
         header('Location: ' . BASE_URL . '/daily_report.php');
         exit;
     }
@@ -58,5 +60,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </div>
+
+<?php if ($loggedOut): ?>
+<div class="modal fade" id="loggedOutModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div class="d-flex justify-content-center mb-3">
+          <div class="rounded-circle border d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-width: 3px;">
+            <span style="font-size: 34px; font-weight: 700;">!</span>
+          </div>
+        </div>
+        <div class="fw-semibold" style="font-size: 18px;">Smartsupplysolutions</div>
+        <div class="text-muted mt-2"><?= htmlspecialchars($loggedOut) ?></div>
+        <div class="d-flex justify-content-center gap-2 mt-4">
+          <button type="button" class="btn btn-app px-3" data-bs-dismiss="modal">حسناً</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<?php if ($loggedOut): ?>
+<script>
+window.addEventListener('load', () => {
+  const el = document.getElementById('loggedOutModal');
+  if (!el) return;
+  const modal = new bootstrap.Modal(el);
+  modal.show();
+});
+</script>
+<?php endif; ?>
 </body>
 </html>

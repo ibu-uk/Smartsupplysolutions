@@ -16,11 +16,22 @@ $id = (int)($_POST['id'] ?? 0);
 $action = (string)($_POST['action'] ?? '');
 $followUpDate = trim((string)($_POST['follow_up_date'] ?? ''));
 $note = trim((string)($_POST['note'] ?? ''));
+$filter = (string)($_POST['filter'] ?? 'due');
+$page = (int)($_POST['page'] ?? 1);
+
+if (!in_array($filter, ['due', 'upcoming', 'all'], true)) {
+    $filter = 'due';
+}
+if ($page < 1) {
+    $page = 1;
+}
 
 if ($id <= 0 || !in_array($action, ['next', 'done', 'cancel'], true)) {
     header('Location: ' . BASE_URL . '/reminders.php');
     exit;
 }
+
+$redirectUrl = BASE_URL . '/reminders.php?' . http_build_query(['filter' => $filter, 'page' => $page]);
 
 // Ensure record exists and user has access
 $params = [$id];
@@ -41,7 +52,7 @@ if (!$row) {
 
 if ($action === 'next') {
     if ($followUpDate === '') {
-        header('Location: ' . BASE_URL . '/reminders.php?filter=due');
+        header('Location: ' . $redirectUrl);
         exit;
     }
 
@@ -77,5 +88,5 @@ if ($action === 'next') {
     ]);
 }
 
-header('Location: ' . BASE_URL . '/reminders.php?filter=due');
+header('Location: ' . $redirectUrl);
 exit;

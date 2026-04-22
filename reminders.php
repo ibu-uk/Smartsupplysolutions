@@ -72,6 +72,7 @@ $badge = reminders_count($user);
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= htmlspecialchars(APP_NAME) ?> - Reminders</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="<?= htmlspecialchars(BASE_URL) ?>/assets/app.css" rel="stylesheet">
 </head>
 <body class="app-bg">
@@ -87,7 +88,7 @@ $badge = reminders_count($user);
             <?php if (is_admin($user)): ?>
                 <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/users.php">Users</a>
             <?php endif; ?>
-            <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/logout.php">Logout</a>
+            <a class="btn btn-sm btn-nav" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a>
         </div>
     </div>
 </nav>
@@ -125,10 +126,7 @@ $badge = reminders_count($user);
                         <th class="text-nowrap">تاريخ الزيارة</th>
                         <th class="d-none d-lg-table-cell">ملاحظات</th>
                         <th class="no-print">الإجراء</th>
-                        <th class="no-print">طباعة</th>
-                        <?php if (is_admin($user)): ?>
-                            <th class="no-print">تعديل</th>
-                        <?php endif; ?>
+                        <th class="no-print text-end">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -142,31 +140,39 @@ $badge = reminders_count($user);
                             <td class="text-nowrap"><?= htmlspecialchars((string)$r['mobile']) ?></td>
                             <td class="text-nowrap"><?= htmlspecialchars((string)$r['visit_date']) ?></td>
                             <td class="d-none d-lg-table-cell" style="min-width: 260px; max-width: 420px; white-space: normal;">
-                                <?= htmlspecialchars((string)$r['notes']) ?>
+                                <?= htmlspecialchars((string)($r['follow_up_action_note'] ?? '')) ?>
                             </td>
-                            <td class="no-print" style="min-width: 320px;">
-                                <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/update_follow_up.php" class="d-flex flex-wrap gap-2 align-items-center">
+                            <td class="no-print text-end" style="min-width: 320px;">
+                                <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/update_follow_up.php" class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
                                     <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                                    <input type="hidden" name="filter" value="<?= htmlspecialchars($filter) ?>">
+                                    <input type="hidden" name="page" value="<?= (int)$page ?>">
                                     <input type="date" name="follow_up_date" class="form-control form-control-sm" value="<?= htmlspecialchars((string)$r['follow_up_date']) ?>" style="max-width: 160px;">
-                                    <input type="text" name="note" class="form-control form-control-sm" placeholder="ملاحظة" style="max-width: 220px;" value="">
+                                    <input type="text" name="note" class="form-control form-control-sm" placeholder="ملاحظة" style="max-width: 220px;" value="<?= htmlspecialchars((string)($r['follow_up_action_note'] ?? '')) ?>">
                                     <button type="submit" name="action" value="next" class="btn btn-app-outline btn-sm">Next</button>
                                     <button type="submit" name="action" value="done" class="btn btn-app btn-sm">Done</button>
                                     <button type="submit" name="action" value="cancel" class="btn btn-app-outline btn-sm">Cancel</button>
                                 </form>
                             </td>
-                            <td class="no-print">
-                                <a class="btn btn-app-outline btn-sm" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&mode=single&id=<?= (int)$r['id'] ?>">طباعة</a>
+                            <td class="no-print text-end text-nowrap">
+                                <div class="d-flex justify-content-end">
+                                    <div class="btn-group" role="group">
+                                        <a class="btn btn-app-outline btn-sm" title="طباعة" aria-label="طباعة" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&mode=single&id=<?= (int)$r['id'] ?>">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
+                                        <?php if (is_admin($user)): ?>
+                                            <a class="btn btn-app-outline btn-sm" title="تعديل" aria-label="تعديل" href="<?= htmlspecialchars(BASE_URL) ?>/edit_report.php?id=<?= (int)$r['id'] ?>">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </td>
-                            <?php if (is_admin($user)): ?>
-                                <td class="no-print">
-                                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/edit_report.php?id=<?= (int)$r['id'] ?>">تعديل</a>
-                                </td>
-                            <?php endif; ?>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (!$rows): ?>
                         <tr>
-                            <td colspan="11" class="text-muted">لا يوجد بيانات</td>
+                            <td colspan="10" class="text-muted">لا يوجد بيانات</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -181,5 +187,27 @@ $badge = reminders_count($user);
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div class="d-flex justify-content-center mb-3">
+          <div class="rounded-circle border d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-width: 3px;">
+            <i class="bi bi-question-lg" style="font-size: 34px;"></i>
+          </div>
+        </div>
+        <div class="fw-semibold" style="font-size: 18px;">تأكيد تسجيل الخروج</div>
+        <div class="text-muted mt-2">هل أنت متأكد أنك تريد تسجيل الخروج؟</div>
+        <div class="d-flex justify-content-center gap-2 mt-4">
+          <a class="btn btn-danger px-3" href="<?= htmlspecialchars(BASE_URL) ?>/logout.php">نعم، تسجيل الخروج</a>
+          <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">إلغاء</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -71,6 +71,22 @@ if ($mode === 'single' || $id !== '') {
     $title = 'طباعة التقرير';
 }
 
+$contactsByVisitId = [];
+if ($rows) {
+    $ids = array_map(static fn($r) => (int)$r['id'], $rows);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $cStmt = db()->prepare('SELECT daily_visit_id, person_name, job_title, mobile FROM daily_visit_contacts WHERE daily_visit_id IN (' . $placeholders . ') ORDER BY id ASC');
+    $cStmt->execute($ids);
+    $cRows = $cStmt->fetchAll();
+    foreach ($cRows as $c) {
+        $vid = (int)$c['daily_visit_id'];
+        if (!isset($contactsByVisitId[$vid])) {
+            $contactsByVisitId[$vid] = [];
+        }
+        $contactsByVisitId[$vid][] = $c;
+    }
+}
+
 ?><!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -154,15 +170,42 @@ if ($mode === 'single' || $id !== '') {
                                 <td><?= htmlspecialchars((string)$r['area']) ?></td>
                                 <td><?= htmlspecialchars((string)$r['clinic_name']) ?></td>
                                 <td class="text-nowrap"><?= htmlspecialchars((string)$r['visit_number']) ?></td>
-                                <td><?= htmlspecialchars((string)$r['person_name']) ?></td>
+                                <td>
+                                    <?php $cs = $contactsByVisitId[(int)$r['id']] ?? []; ?>
+                                    <?php if ($cs): ?>
+                                        <?php foreach ($cs as $idx => $c): ?>
+                                            <div>
+                                                <?= htmlspecialchars((string)($c['person_name'] ?? '')) ?>
+                                                <?php if ((string)($c['job_title'] ?? '') !== ''): ?>
+                                                    <span class="text-muted">(<?= htmlspecialchars((string)$c['job_title']) ?>)</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <?= htmlspecialchars((string)$r['person_name']) ?>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?= htmlspecialchars((string)$r['job_title']) ?></td>
-                                <td class="text-nowrap"><?= htmlspecialchars((string)$r['mobile']) ?></td>
+                                <td>
+                                    <?php if ($cs): ?>
+                                        <?php foreach ($cs as $idx => $c): ?>
+                                            <div class="text-nowrap"><?= htmlspecialchars((string)($c['mobile'] ?? '')) ?></div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="text-nowrap"><?= htmlspecialchars((string)$r['mobile']) ?></div>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?= htmlspecialchars((string)$r['interest']) ?></td>
                                 <td><?= htmlspecialchars((string)$r['visit_type']) ?></td>
                                 <td><?= htmlspecialchars((string)$r['visit_result']) ?></td>
                                 <td><?= htmlspecialchars((string)$r['execution_status']) ?></td>
                                 <td class="col-notes" style="white-space: normal;">
-                                    <?= htmlspecialchars((string)$r['notes']) ?>
+                                    <?php if ((string)($r['follow_up_action_note'] ?? '') !== ''): ?>
+                                        <div><?= htmlspecialchars((string)$r['follow_up_action_note']) ?></div>
+                                    <?php endif; ?>
+                                    <?php if ((string)($r['notes'] ?? '') !== ''): ?>
+                                        <div><?= htmlspecialchars((string)$r['notes']) ?></div>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="col-username"><?= htmlspecialchars((string)$r['username']) ?></td>
                             </tr>

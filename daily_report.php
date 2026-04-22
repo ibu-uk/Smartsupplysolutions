@@ -9,6 +9,7 @@ require_once __DIR__ . '/dropdowns.php';
 
 $user = current_user();
 $reminders_count = reminders_count($user);
+$welcome = flash_get('welcome');
 
 ?><!doctype html>
 <html lang="ar" dir="rtl">
@@ -17,6 +18,8 @@ $reminders_count = reminders_count($user);
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Smartsupplysolutions</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link href="<?= htmlspecialchars(BASE_URL) ?>/assets/app.css" rel="stylesheet">
 </head>
 <body class="app-bg">
@@ -32,7 +35,7 @@ $reminders_count = reminders_count($user);
             <?php if (is_admin($user)): ?>
                 <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/users.php">Users</a>
             <?php endif; ?>
-            <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/logout.php">Logout</a>
+            <a class="btn btn-sm btn-nav" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a>
         </div>
     </div>
 </nav>
@@ -48,12 +51,12 @@ $reminders_count = reminders_count($user);
             <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/save_report.php" class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">تاريخ الزيارة</label>
-                    <input type="date" name="visit_date" class="form-control" required>
+                    <input type="text" name="visit_date" class="form-control js-date" required>
                 </div>
 
                 <div class="col-md-4">
                     <label class="form-label">تاريخ متابعة</label>
-                    <input type="date" name="follow_up_date" class="form-control">
+                    <input type="text" name="follow_up_date" class="form-control js-date">
                 </div>
 
                 <div class="col-md-4">
@@ -81,24 +84,27 @@ $reminders_count = reminders_count($user);
                     </select>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">اسم الشخص</label>
-                    <input type="text" name="person_name" class="form-control" required>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">المسمى الوظيفي</label>
-                    <select name="job_title" class="form-select" required>
-                        <option value="" selected disabled>اختر</option>
-                        <?php foreach ($DROPDOWNS['job_titles'] as $v): ?>
-                            <option value="<?= htmlspecialchars($v) ?>"><?= htmlspecialchars($v) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">رقم الموبايل</label>
-                    <input type="tel" name="mobile" class="form-control" inputmode="tel">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label mb-0">جهات الاتصال</label>
+                        <button type="button" class="btn btn-app-outline btn-sm" id="addContactBtn">+</button>
+                    </div>
+                    <div id="contactsContainer" class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <input type="text" name="contacts_name[]" class="form-control" placeholder="اسم الشخص" required>
+                        </div>
+                        <div class="col-md-4">
+                            <select name="contacts_job_title[]" class="form-select" required>
+                                <option value="" selected disabled>المسمى الوظيفي</option>
+                                <?php foreach ($DROPDOWNS['job_titles'] as $v): ?>
+                                    <option value="<?= htmlspecialchars($v) ?>"><?= htmlspecialchars($v) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="tel" name="contacts_mobile[]" class="form-control" placeholder="رقم الموبايل" inputmode="tel">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-md-4">
@@ -159,6 +165,47 @@ $reminders_count = reminders_count($user);
 const dependencies = <?= json_encode($DEPENDENCIES, JSON_UNESCAPED_UNICODE) ?>;
 const allVisitResults = <?= json_encode($DROPDOWNS['visit_result'], JSON_UNESCAPED_UNICODE) ?>;
 
+document.getElementById('addContactBtn')?.addEventListener('click', () => {
+    const container = document.getElementById('contactsContainer');
+    if (!container) return;
+
+    const nameCol = document.createElement('div');
+    nameCol.className = 'col-md-4';
+    nameCol.innerHTML = '<input type="text" name="contacts_name[]" class="form-control" placeholder="اسم الشخص" required>';
+
+    const titleCol = document.createElement('div');
+    titleCol.className = 'col-md-4';
+    const jobTitleOptions = <?= json_encode($DROPDOWNS['job_titles'], JSON_UNESCAPED_UNICODE) ?>;
+    let titleHtml = '<select name="contacts_job_title[]" class="form-select" required>';
+    titleHtml += '<option value="" selected disabled>المسمى الوظيفي</option>';
+    for (const v of jobTitleOptions) {
+        const escaped = String(v)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+        titleHtml += `<option value="${escaped}">${escaped}</option>`;
+    }
+    titleHtml += '</select>';
+    titleCol.innerHTML = titleHtml;
+
+    const mobileCol = document.createElement('div');
+    mobileCol.className = 'col-md-4 d-flex gap-2';
+    mobileCol.innerHTML = '<input type="tel" name="contacts_mobile[]" class="form-control" placeholder="رقم الموبايل" inputmode="tel">' +
+        '<button type="button" class="btn btn-danger btn-sm" aria-label="Remove">×</button>';
+
+    mobileCol.querySelector('button')?.addEventListener('click', () => {
+        nameCol.remove();
+        titleCol.remove();
+        mobileCol.remove();
+    });
+
+    container.appendChild(nameCol);
+    container.appendChild(titleCol);
+    container.appendChild(mobileCol);
+});
+
 function setOptions(selectEl, options) {
     const current = selectEl.value;
     selectEl.innerHTML = '<option value="" selected disabled>اختر</option>';
@@ -201,13 +248,76 @@ document.getElementById('visit_type')?.addEventListener('change', (e) => {
 </div>
 <?php endif; ?>
 
+<?php if ($welcome): ?>
+<div class="modal fade" id="welcomeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div class="d-flex justify-content-center mb-3">
+          <div class="rounded-circle border d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-width: 3px;">
+            <i class="bi bi-info-lg" style="font-size: 34px;"></i>
+          </div>
+        </div>
+        <div class="fw-semibold" style="font-size: 18px;">مرحباً</div>
+        <div class="text-muted mt-2"><?= htmlspecialchars($welcome) ?></div>
+        <div class="d-flex justify-content-center gap-2 mt-4">
+          <button type="button" class="btn btn-app px-3" data-bs-dismiss="modal">حسناً</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body text-center p-4">
+        <div class="d-flex justify-content-center mb-3">
+          <div class="rounded-circle border d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-width: 3px;">
+            <i class="bi bi-question-lg" style="font-size: 34px;"></i>
+          </div>
+        </div>
+        <div class="fw-semibold" style="font-size: 18px;">تأكيد تسجيل الخروج</div>
+        <div class="text-muted mt-2">هل أنت متأكد أنك تريد تسجيل الخروج؟</div>
+        <div class="d-flex justify-content-center gap-2 mt-4">
+          <a class="btn btn-danger px-3" href="<?= htmlspecialchars(BASE_URL) ?>/logout.php">نعم، تسجيل الخروج</a>
+          <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">إلغاء</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.querySelectorAll('.js-date').forEach((el) => {
+  flatpickr(el, {
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'd/m/Y',
+    allowInput: true,
+  });
+});
+</script>
 <?php if ($reminders_count > 0): ?>
 <script>
 window.addEventListener('load', () => {
   const el = document.getElementById('remindersModal');
   if (!el) return;
   const modal = new bootstrap.Modal(el, { backdrop: 'static' });
+  modal.show();
+});
+</script>
+<?php endif; ?>
+
+<?php if ($welcome): ?>
+<script>
+window.addEventListener('load', () => {
+  const el = document.getElementById('welcomeModal');
+  if (!el) return;
+  const modal = new bootstrap.Modal(el);
   modal.show();
 });
 </script>

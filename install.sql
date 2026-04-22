@@ -36,6 +36,18 @@ CREATE TABLE IF NOT EXISTS `daily_visits` (
   CONSTRAINT `fk_daily_visits_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS `daily_visit_contacts` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `daily_visit_id` BIGINT UNSIGNED NOT NULL,
+  `person_name` VARCHAR(255) NOT NULL,
+  `job_title` VARCHAR(190) NULL,
+  `mobile` VARCHAR(50) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_daily_visit_contacts_visit_id` (`daily_visit_id`),
+  CONSTRAINT `fk_daily_visit_contacts_visit_id` FOREIGN KEY (`daily_visit_id`) REFERENCES `daily_visits` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 INSERT INTO `users` (`username`, `password_hash`)
 VALUES ('admin', '$2y$10$pvkw62KQArrjPKMfqeUxueZpq3vVfY1Hs6bmZxRIaQxxj0n5MR.a6')
 ON DUPLICATE KEY UPDATE `username` = `username`;

@@ -15,12 +15,14 @@ $username = trim((string)($_POST['username'] ?? ''));
 $password = (string)($_POST['password'] ?? '');
 
 if ($username === '' || $password === '') {
-    header('Location: ' . BASE_URL . '/users.php?error=' . urlencode('الرجاء إدخال اسم المستخدم وكلمة المرور'));
+    flash_set('error', 'الرجاء إدخال اسم المستخدم وكلمة المرور');
+    header('Location: ' . BASE_URL . '/users.php');
     exit;
 }
 
 if (mb_strlen($username) > 190) {
-    header('Location: ' . BASE_URL . '/users.php?error=' . urlencode('اسم المستخدم طويل'));
+    flash_set('error', 'اسم المستخدم طويل');
+    header('Location: ' . BASE_URL . '/users.php');
     exit;
 }
 
@@ -30,9 +32,11 @@ try {
     $stmt = db()->prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)');
     $stmt->execute([$username, $hash]);
 } catch (Throwable $e) {
-    header('Location: ' . BASE_URL . '/users.php?error=' . urlencode('اسم المستخدم موجود مسبقاً'));
+    flash_set('error', 'اسم المستخدم موجود مسبقاً');
+    header('Location: ' . BASE_URL . '/users.php');
     exit;
 }
 
-header('Location: ' . BASE_URL . '/users.php?created=1');
+flash_set('success', 'تم إنشاء المستخدم');
+header('Location: ' . BASE_URL . '/users.php');
 exit;

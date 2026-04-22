@@ -13,7 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $id = (string)($_POST['id'] ?? '');
 if ($id === '' || !ctype_digit($id)) {
-    header('Location: ' . BASE_URL . '/users.php?error=' . urlencode('معرف غير صحيح'));
+    flash_set('error', 'معرف غير صحيح');
+    header('Location: ' . BASE_URL . '/users.php');
     exit;
 }
 
@@ -22,17 +23,20 @@ $stmt->execute([(int)$id]);
 $row = $stmt->fetch();
 
 if (!$row) {
-    header('Location: ' . BASE_URL . '/users.php?error=' . urlencode('المستخدم غير موجود'));
+    flash_set('error', 'المستخدم غير موجود');
+    header('Location: ' . BASE_URL . '/users.php');
     exit;
 }
 
 if (((string)$row['username']) === 'admin') {
-    header('Location: ' . BASE_URL . '/users.php?error=' . urlencode('لا يمكن حذف admin'));
+    flash_set('error', 'لا يمكن حذف admin');
+    header('Location: ' . BASE_URL . '/users.php');
     exit;
 }
 
 $stmt = db()->prepare('DELETE FROM users WHERE id = ?');
 $stmt->execute([(int)$id]);
 
-header('Location: ' . BASE_URL . '/users.php?created=1');
+flash_set('success', 'تم الحذف');
+header('Location: ' . BASE_URL . '/users.php');
 exit;
