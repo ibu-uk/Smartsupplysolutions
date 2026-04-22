@@ -32,7 +32,7 @@ function reminders_count(?array $user = null): int
         return 0;
     }
 
-    $where = 'dv.follow_up_date IS NOT NULL AND dv.follow_up_date <= CURDATE()';
+    $where = "dv.follow_up_date IS NOT NULL AND dv.follow_up_date <= CURDATE() AND (dv.follow_up_status IS NULL OR dv.follow_up_status = 'next')";
     $params = [];
 
     if (!is_admin($u)) {

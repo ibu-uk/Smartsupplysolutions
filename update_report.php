@@ -20,10 +20,10 @@ if ($id === '' || !ctype_digit($id)) {
 
 $visit_date = (string)($_POST['visit_date'] ?? '');
 $follow_up_date = (string)($_POST['follow_up_date'] ?? '');
-$area = trim((string)($_POST['area'] ?? ''));
-$clinic_name = trim((string)($_POST['clinic_name'] ?? ''));
-$visit_number = trim((string)($_POST['visit_number'] ?? ''));
-$person_name = trim((string)($_POST['person_name'] ?? ''));
+$area = (string)($_POST['area'] ?? '');
+$clinic_name = (string)($_POST['clinic_name'] ?? '');
+$visit_number = (string)($_POST['visit_number'] ?? '');
+$person_name = (string)($_POST['person_name'] ?? '');
 $job_title = trim((string)($_POST['job_title'] ?? ''));
 $mobile = trim((string)($_POST['mobile'] ?? ''));
 $interest = trim((string)($_POST['interest'] ?? ''));
@@ -51,14 +51,27 @@ if ($errors) {
 }
 
 $stmt = db()->prepare(
-    'UPDATE daily_visits
-     SET visit_date = ?, follow_up_date = ?, area = ?, clinic_name = ?, visit_number = ?, person_name = ?, job_title = ?, mobile = ?, interest = ?, visit_type = ?, visit_result = ?, execution_status = ?, notes = ?
-     WHERE id = ?'
+    "UPDATE daily_visits
+     SET visit_date = ?,
+         follow_up_date = ?,
+         follow_up_status = CASE
+             WHEN ? IS NULL THEN NULL
+             WHEN (follow_up_status IS NULL OR follow_up_status = '') THEN 'next'
+             ELSE follow_up_status
+         END,
+         follow_up_done_at = CASE WHEN ? IS NULL THEN NULL ELSE follow_up_done_at END,
+         follow_up_action_note = CASE WHEN ? IS NULL THEN NULL ELSE follow_up_action_note END,
+         area = ?, clinic_name = ?, visit_number = ?, person_name = ?, job_title = ?, mobile = ?, interest = ?, visit_type = ?, visit_result = ?, execution_status = ?, notes = ?
+     WHERE id = ?"
 );
 
+$fud = ($follow_up_date !== '' ? $follow_up_date : null);
 $stmt->execute([
     $visit_date,
-    ($follow_up_date !== '' ? $follow_up_date : null),
+    $fud,
+    $fud,
+    $fud,
+    $fud,
     $area,
     $clinic_name,
     $visit_number,

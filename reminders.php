@@ -13,6 +13,7 @@ if (!in_array($filter, ['due', 'upcoming', 'all'], true)) {
 }
 
 $where = ['dv.follow_up_date IS NOT NULL'];
+$where[] = "(dv.follow_up_status IS NULL OR dv.follow_up_status = 'next')";
 $params = [];
 
 if ($filter === 'due') {
@@ -99,6 +100,7 @@ $badge = reminders_count($user);
                         <th class="text-nowrap">رقم الموبايل</th>
                         <th class="text-nowrap">تاريخ الزيارة</th>
                         <th class="d-none d-lg-table-cell">ملاحظات</th>
+                        <th class="no-print">الإجراء</th>
                         <th class="no-print">طباعة</th>
                         <?php if (is_admin($user)): ?>
                             <th class="no-print">تعديل</th>
@@ -118,6 +120,16 @@ $badge = reminders_count($user);
                             <td class="d-none d-lg-table-cell" style="min-width: 260px; max-width: 420px; white-space: normal;">
                                 <?= htmlspecialchars((string)$r['notes']) ?>
                             </td>
+                            <td class="no-print" style="min-width: 320px;">
+                                <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/update_follow_up.php" class="d-flex flex-wrap gap-2 align-items-center">
+                                    <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                                    <input type="date" name="follow_up_date" class="form-control form-control-sm" value="<?= htmlspecialchars((string)$r['follow_up_date']) ?>" style="max-width: 160px;">
+                                    <input type="text" name="note" class="form-control form-control-sm" placeholder="ملاحظة" style="max-width: 220px;" value="">
+                                    <button type="submit" name="action" value="next" class="btn btn-app-outline btn-sm">Next</button>
+                                    <button type="submit" name="action" value="done" class="btn btn-app btn-sm">Done</button>
+                                    <button type="submit" name="action" value="cancel" class="btn btn-app-outline btn-sm">Cancel</button>
+                                </form>
+                            </td>
                             <td class="no-print">
                                 <a class="btn btn-app-outline btn-sm" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&mode=single&id=<?= (int)$r['id'] ?>">طباعة</a>
                             </td>
@@ -130,7 +142,7 @@ $badge = reminders_count($user);
                     <?php endforeach; ?>
                     <?php if (!$rows): ?>
                         <tr>
-                            <td colspan="10" class="text-muted">لا يوجد بيانات</td>
+                            <td colspan="11" class="text-muted">لا يوجد بيانات</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
