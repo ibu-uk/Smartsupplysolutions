@@ -191,6 +191,10 @@ $rows = $stmt->fetchAll();
                     <tr>
                         <th>#</th>
                         <th class="no-print">طباعة</th>
+                        <?php if (is_admin($user)): ?>
+                            <th class="no-print">تعديل</th>
+                            <th class="no-print">حذف</th>
+                        <?php endif; ?>
                         <th>المنطقة</th>
                         <th>اسم العيادة</th>
                         <th>اسم الشخص</th>
@@ -213,6 +217,17 @@ $rows = $stmt->fetchAll();
                             <td class="no-print">
                                 <a class="btn btn-app-outline btn-sm" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&mode=single&id=<?= (int)$r['id'] ?>">طباعة</a>
                             </td>
+                            <?php if (is_admin($user)): ?>
+                                <td class="no-print">
+                                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/edit_report.php?id=<?= (int)$r['id'] ?>">تعديل</a>
+                                </td>
+                                <td class="no-print">
+                                    <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/delete_report.php" onsubmit="return confirm('حذف التقرير؟');">
+                                        <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                                        <button class="btn btn-danger btn-sm" type="submit">حذف</button>
+                                    </form>
+                                </td>
+                            <?php endif; ?>
                             <td><?= htmlspecialchars((string)$r['area']) ?></td>
                             <td><?= htmlspecialchars((string)$r['clinic_name']) ?></td>
                             <td><?= htmlspecialchars((string)$r['person_name']) ?></td>
