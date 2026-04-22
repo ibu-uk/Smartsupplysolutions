@@ -130,6 +130,7 @@ if ($mode === 'single' || $id !== '') {
                         <tr>
                             <th>#</th>
                             <th>تاريخ الزيارة</th>
+                            <th>تاريخ متابعة</th>
                             <th>المنطقة</th>
                             <th>اسم العيادة</th>
                             <th>رقم الزيارة</th>
@@ -149,6 +150,7 @@ if ($mode === 'single' || $id !== '') {
                             <tr>
                                 <td><?= (int)$r['id'] ?></td>
                                 <td class="text-nowrap"><?= htmlspecialchars((string)$r['visit_date']) ?></td>
+                                <td class="text-nowrap"><?= htmlspecialchars((string)($r['follow_up_date'] ?? '')) ?></td>
                                 <td><?= htmlspecialchars((string)$r['area']) ?></td>
                                 <td><?= htmlspecialchars((string)$r['clinic_name']) ?></td>
                                 <td class="text-nowrap"><?= htmlspecialchars((string)$r['visit_number']) ?></td>
@@ -167,7 +169,7 @@ if ($mode === 'single' || $id !== '') {
                         <?php endforeach; ?>
                         <?php if (!$rows): ?>
                             <tr>
-                                <td colspan="14" class="text-muted">لا يوجد بيانات</td>
+                                <td colspan="15" class="text-muted">لا يوجد بيانات</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

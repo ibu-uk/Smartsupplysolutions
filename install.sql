@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS `daily_visits` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` INT UNSIGNED NOT NULL,
   `visit_date` DATE NOT NULL,
+  `follow_up_date` DATE NULL,
   `area` VARCHAR(190) NOT NULL,
   `clinic_name` VARCHAR(255) NOT NULL,
   `visit_number` VARCHAR(20) NOT NULL,

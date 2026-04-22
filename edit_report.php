@@ -64,6 +64,11 @@ $user = current_user();
                 </div>
 
                 <div class="col-md-4">
+                    <label class="form-label">تاريخ متابعة</label>
+                    <input type="date" name="follow_up_date" class="form-control" value="<?= htmlspecialchars((string)($r['follow_up_date'] ?? '')) ?>">
+                </div>
+
+                <div class="col-md-4">
                     <label class="form-label">المنطقة</label>
                     <select name="area" class="form-select" required>
                         <option value="" disabled>اختر</option>

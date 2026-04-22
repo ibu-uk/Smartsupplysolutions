@@ -19,6 +19,7 @@ if ($id === '' || !ctype_digit($id)) {
 }
 
 $visit_date = (string)($_POST['visit_date'] ?? '');
+$follow_up_date = (string)($_POST['follow_up_date'] ?? '');
 $area = trim((string)($_POST['area'] ?? ''));
 $clinic_name = trim((string)($_POST['clinic_name'] ?? ''));
 $visit_number = trim((string)($_POST['visit_number'] ?? ''));
@@ -51,12 +52,13 @@ if ($errors) {
 
 $stmt = db()->prepare(
     'UPDATE daily_visits
-     SET visit_date = ?, area = ?, clinic_name = ?, visit_number = ?, person_name = ?, job_title = ?, mobile = ?, interest = ?, visit_type = ?, visit_result = ?, execution_status = ?, notes = ?
+     SET visit_date = ?, follow_up_date = ?, area = ?, clinic_name = ?, visit_number = ?, person_name = ?, job_title = ?, mobile = ?, interest = ?, visit_type = ?, visit_result = ?, execution_status = ?, notes = ?
      WHERE id = ?'
 );
 
 $stmt->execute([
     $visit_date,
+    ($follow_up_date !== '' ? $follow_up_date : null),
     $area,
     $clinic_name,
     $visit_number,

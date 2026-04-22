@@ -25,6 +25,26 @@ function require_login(): void
     }
 }
 
+function reminders_count(?array $user = null): int
+{
+    $u = $user ?? current_user();
+    if (!$u) {
+        return 0;
+    }
+
+    $where = 'dv.follow_up_date IS NOT NULL AND dv.follow_up_date <= CURDATE()';
+    $params = [];
+
+    if (!is_admin($u)) {
+        $where .= ' AND dv.user_id = ?';
+        $params[] = (int)$u['id'];
+    }
+
+    $stmt = db()->prepare('SELECT COUNT(*) AS c FROM daily_visits dv WHERE ' . $where);
+    $stmt->execute($params);
+    return (int)($stmt->fetch()['c'] ?? 0);
+}
+
 function is_admin(?array $user = null): bool
 {
     $u = $user ?? current_user();

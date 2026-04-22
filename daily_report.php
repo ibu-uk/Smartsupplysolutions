@@ -8,6 +8,7 @@ require_login();
 require_once __DIR__ . '/dropdowns.php';
 
 $user = current_user();
+$reminders_count = reminders_count($user);
 
 ?><!doctype html>
 <html lang="ar" dir="rtl">
@@ -23,6 +24,7 @@ $user = current_user();
     <div class="container">
         <a class="navbar-brand" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
         <div class="ms-auto d-flex gap-2">
+            <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php">Reminders<?= $reminders_count > 0 ? ' (' . (int)$reminders_count . ')' : '' ?></a>
             <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/reports.php">Reports</a>
             <?php if (is_admin($user)): ?>
                 <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/users.php">Users</a>
@@ -44,6 +46,11 @@ $user = current_user();
                 <div class="col-md-4">
                     <label class="form-label">تاريخ الزيارة</label>
                     <input type="date" name="visit_date" class="form-control" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">تاريخ متابعة</label>
+                    <input type="date" name="follow_up_date" class="form-control">
                 </div>
 
                 <div class="col-md-4">
@@ -170,5 +177,37 @@ document.getElementById('visit_type')?.addEventListener('change', (e) => {
     setOptions(document.getElementById('visit_result'), options);
 });
 </script>
+
+<?php if ($reminders_count > 0): ?>
+<div class="modal fade" id="remindersModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">متابعات مستحقة</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        يوجد لديك عدد <strong><?= (int)$reminders_count ?></strong> متابعة مستحقة / متأخرة.
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-app" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php">عرض المتابعات</a>
+        <button type="button" class="btn btn-app-outline" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<?php if ($reminders_count > 0): ?>
+<script>
+window.addEventListener('load', () => {
+  const el = document.getElementById('remindersModal');
+  if (!el) return;
+  const modal = new bootstrap.Modal(el, { backdrop: 'static' });
+  modal.show();
+});
+</script>
+<?php endif; ?>
 </body>
 </html>

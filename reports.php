@@ -16,9 +16,21 @@ $to = (string)($_GET['to'] ?? '');
 $name = trim((string)($_GET['name'] ?? ''));
 $area = trim((string)($_GET['area'] ?? ''));
 $user_id = trim((string)($_GET['user_id'] ?? ''));
+$weekday = trim((string)($_GET['weekday'] ?? ''));
 
 $where = [];
 $params = [];
+
+$weekdayOptions = [
+    '' => 'الكل',
+    '1' => 'الأحد',
+    '2' => 'الإثنين',
+    '3' => 'الثلاثاء',
+    '4' => 'الأربعاء',
+    '5' => 'الخميس',
+    '6' => 'الجمعة',
+    '7' => 'السبت',
+];
 
 if ($from !== '') {
     $where[] = 'visit_date >= ?';
@@ -44,6 +56,11 @@ if ($area !== '') {
 if ($user_id !== '') {
     $where[] = 'dv.user_id = ?';
     $params[] = (int)$user_id;
+}
+
+if ($weekday !== '' && isset($weekdayOptions[$weekday])) {
+    $where[] = 'DAYOFWEEK(dv.visit_date) = ?';
+    $params[] = (int)$weekday;
 }
 
 $whereSql = $where ? (' WHERE ' . implode(' AND ', $where)) : '';
@@ -78,6 +95,8 @@ $rows = $stmt->fetchAll();
     <div class="container">
         <a class="navbar-brand" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
         <div class="ms-auto d-flex gap-2">
+            <?php $reminders_count = reminders_count($user); ?>
+            <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php">Reminders<?= $reminders_count > 0 ? ' (' . (int)$reminders_count . ')' : '' ?></a>
             <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php">New</a>
             <?php if (is_admin($user)): ?>
                 <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/users.php">Users</a>
@@ -128,6 +147,15 @@ $rows = $stmt->fetchAll();
                         <option value="">الكل</option>
                         <?php foreach ($users as $u): ?>
                             <option value="<?= (int)$u['id'] ?>" <?= ($user_id !== '' && (int)$user_id === (int)$u['id']) ? 'selected' : '' ?>><?= htmlspecialchars((string)$u['username']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">اليوم</label>
+                    <select name="weekday" class="form-select">
+                        <?php foreach ($weekdayOptions as $k => $label): ?>
+                            <option value="<?= htmlspecialchars((string)$k) ?>" <?= ($weekday === (string)$k) ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>

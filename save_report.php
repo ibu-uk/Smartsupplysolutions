@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $user = current_user();
 
 $visit_date = (string)($_POST['visit_date'] ?? '');
+$follow_up_date = (string)($_POST['follow_up_date'] ?? '');
 $area = trim((string)($_POST['area'] ?? ''));
 $clinic_name = trim((string)($_POST['clinic_name'] ?? ''));
 $visit_number = trim((string)($_POST['visit_number'] ?? ''));
@@ -44,13 +45,14 @@ if ($errors) {
 }
 
 $stmt = db()->prepare(
-    'INSERT INTO daily_visits (user_id, visit_date, area, clinic_name, visit_number, person_name, job_title, mobile, interest, visit_type, visit_result, execution_status, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO daily_visits (user_id, visit_date, follow_up_date, area, clinic_name, visit_number, person_name, job_title, mobile, interest, visit_type, visit_result, execution_status, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
 );
 
 $stmt->execute([
     (int)$user['id'],
     $visit_date,
+    ($follow_up_date !== '' ? $follow_up_date : null),
     $area,
     $clinic_name,
     $visit_number,
