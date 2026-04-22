@@ -34,10 +34,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= htmlspecialchars(APP_NAME) ?> - Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="<?= htmlspecialchars(BASE_URL) ?>/assets/app.css" rel="stylesheet">
 </head>
-<body class="app-bg">
+<body class="app-bg app-login-bg">
 <div class="container py-5" style="max-width: 420px;">
+    <div class="text-center mb-3">
+        <img
+            src="<?= htmlspecialchars(BASE_URL . '/assets/' . rawurlencode('Screenshot 2026-04-22 153610.png')) ?>"
+            alt="Smartsupplysolutions"
+            style="height: 44px; width: auto;"
+        >
+        <div class="mt-2 fw-semibold" style="font-size: 16px;">Smartsupplysolutions</div>
+    </div>
     <div class="card shadow-sm app-card">
         <div class="card-body p-4">
             <h1 class="h5 mb-3 app-title">تسجيل الدخول</h1>
@@ -67,8 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="modal-content">
       <div class="modal-body text-center p-4">
         <div class="d-flex justify-content-center mb-3">
-          <div class="rounded-circle border d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-width: 3px;">
-            <span style="font-size: 34px; font-weight: 700;">!</span>
+          <div class="app-modal-icon app-modal-icon--success">
+            <i class="bi bi-check-lg" style="font-size: 34px;"></i>
           </div>
         </div>
         <div class="fw-semibold" style="font-size: 18px;">Smartsupplysolutions</div>

@@ -76,3 +76,43 @@ body.app-bg{
 .table thead th{
   white-space:nowrap;
 }
+
+.app-modal-icon{
+  width:72px;
+  height:72px;
+  border-radius:999px;
+  border:3px solid rgba(17,24,39,.12);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto;
+  background:#fff;
+}
+
+.app-modal-icon--info{
+  border-color:rgba(13,110,253,.28);
+  background:rgba(13,110,253,.08);
+  color:#0d6efd;
+}
+
+.app-modal-icon--success{
+  border-color:rgba(25,135,84,.28);
+  background:rgba(25,135,84,.10);
+  color:#198754;
+}
+
+body.app-login-bg{
+  position:relative;
+}
+
+body.app-login-bg::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background-image:url("../assets/Screenshot%202026-04-22%20153610.png");
+  background-repeat:no-repeat;
+  background-position:center 60px;
+  background-size:220px auto;
+  opacity:.08;
+  pointer-events:none;
+}

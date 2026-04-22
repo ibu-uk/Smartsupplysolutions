@@ -148,6 +148,7 @@ if ($rows) {
                             <th>تاريخ الزيارة</th>
                             <th>تاريخ متابعة</th>
                             <th>المنطقة</th>
+                            <th>العنوان</th>
                             <th>اسم العيادة</th>
                             <th>رقم الزيارة</th>
                             <th>اسم الشخص</th>
@@ -168,6 +169,7 @@ if ($rows) {
                                 <td class="text-nowrap"><?= htmlspecialchars((string)$r['visit_date']) ?></td>
                                 <td class="text-nowrap"><?= htmlspecialchars((string)($r['follow_up_date'] ?? '')) ?></td>
                                 <td><?= htmlspecialchars((string)$r['area']) ?></td>
+                                <td><?= htmlspecialchars((string)($r['address'] ?? '')) ?></td>
                                 <td><?= htmlspecialchars((string)$r['clinic_name']) ?></td>
                                 <td class="text-nowrap"><?= htmlspecialchars((string)$r['visit_number']) ?></td>
                                 <td>
@@ -212,7 +214,7 @@ if ($rows) {
                         <?php endforeach; ?>
                         <?php if (!$rows): ?>
                             <tr>
-                                <td colspan="15" class="text-muted">لا يوجد بيانات</td>
+                                <td colspan="16" class="text-muted">لا يوجد بيانات</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>

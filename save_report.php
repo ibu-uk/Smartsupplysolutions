@@ -15,6 +15,7 @@ $user = current_user();
 $visit_date = (string)($_POST['visit_date'] ?? '');
 $follow_up_date = (string)($_POST['follow_up_date'] ?? '');
 $area = trim((string)($_POST['area'] ?? ''));
+$address = trim((string)($_POST['address'] ?? ''));
 $clinic_name = trim((string)($_POST['clinic_name'] ?? ''));
 $visit_number = trim((string)($_POST['visit_number'] ?? ''));
 $contacts_name = $_POST['contacts_name'] ?? [];
@@ -80,8 +81,8 @@ $pdo = db();
 $pdo->beginTransaction();
 try {
     $stmt = $pdo->prepare(
-        "INSERT INTO daily_visits (user_id, visit_date, follow_up_date, follow_up_status, follow_up_done_at, follow_up_action_note, area, clinic_name, visit_number, person_name, job_title, mobile, interest, visit_type, visit_result, execution_status, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO daily_visits (user_id, visit_date, follow_up_date, follow_up_status, follow_up_done_at, follow_up_action_note, area, address, clinic_name, visit_number, person_name, job_title, mobile, interest, visit_type, visit_result, execution_status, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     );
 
     $hasFollowUp = ($follow_up_date !== '');
@@ -93,6 +94,7 @@ try {
         null,
         null,
         $area,
+        ($address !== '' ? $address : null),
         $clinic_name,
         $visit_number,
         $primaryPersonName,

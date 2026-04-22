@@ -28,7 +28,10 @@ $users = $stmt->fetchAll();
 <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
     <div class="container position-relative">
         <div class="position-absolute top-50 start-50 translate-middle text-white fw-semibold text-center" style="font-size: 14px; width: 100%; pointer-events: none;">
-            Smartsupplysolutions
+            <div class="d-inline-flex align-items-center gap-2" style="transform: translateY(-1px);">
+                <img src="<?= htmlspecialchars(BASE_URL . '/assets/' . rawurlencode('Screenshot 2026-04-22 153610.png')) ?>" alt="Smartsupplysolutions" style="height: 26px; width: auto; background: #fff; border-radius: 6px; padding: 2px 6px; opacity: .95;">
+                <span>Smartsupplysolutions</span>
+            </div>
         </div>
         <a class="navbar-brand position-relative" style="z-index: 1;" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
         <div class="ms-auto d-flex gap-2 position-relative" style="z-index: 1;">

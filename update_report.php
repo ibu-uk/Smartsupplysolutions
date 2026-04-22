@@ -21,6 +21,7 @@ if ($id === '' || !ctype_digit($id)) {
 $visit_date = (string)($_POST['visit_date'] ?? '');
 $follow_up_date = (string)($_POST['follow_up_date'] ?? '');
 $area = (string)($_POST['area'] ?? '');
+$address = trim((string)($_POST['address'] ?? ''));
 $clinic_name = (string)($_POST['clinic_name'] ?? '');
 $visit_number = (string)($_POST['visit_number'] ?? '');
 $contacts_name = $_POST['contacts_name'] ?? [];
@@ -96,7 +97,7 @@ try {
              END,
              follow_up_done_at = CASE WHEN ? IS NULL THEN NULL ELSE follow_up_done_at END,
              follow_up_action_note = CASE WHEN ? IS NULL THEN NULL ELSE follow_up_action_note END,
-             area = ?, clinic_name = ?, visit_number = ?, person_name = ?, job_title = ?, mobile = ?, interest = ?, visit_type = ?, visit_result = ?, execution_status = ?, notes = ?
+             area = ?, address = ?, clinic_name = ?, visit_number = ?, person_name = ?, job_title = ?, mobile = ?, interest = ?, visit_type = ?, visit_result = ?, execution_status = ?, notes = ?
          WHERE id = ?"
     );
 
@@ -108,6 +109,7 @@ try {
         $fud,
         $fud,
         $area,
+        ($address !== '' ? $address : null),
         $clinic_name,
         $visit_number,
         $primaryPersonName,
