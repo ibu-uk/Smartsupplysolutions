@@ -12,6 +12,12 @@ if (!in_array($filter, ['due', 'upcoming', 'all'], true)) {
     $filter = 'due';
 }
 
+$page = (int)($_GET['page'] ?? 1);
+$per_page = 50;
+if ($page < 1) {
+    $page = 1;
+}
+
 $where = ['dv.follow_up_date IS NOT NULL'];
 $where[] = "(dv.follow_up_status IS NULL OR dv.follow_up_status = 'next')";
 $params = [];
@@ -34,13 +40,28 @@ $countStmt = db()->prepare('SELECT COUNT(*) AS c FROM daily_visits dv' . $whereS
 $countStmt->execute($params);
 $total = (int)($countStmt->fetch()['c'] ?? 0);
 
+$totalPages = (int)max(1, (int)ceil($total / $per_page));
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $per_page;
+
 $stmt = db()->prepare(
     'SELECT dv.*, u.username FROM daily_visits dv JOIN users u ON u.id = dv.user_id' .
     $whereSql .
-    ' ORDER BY dv.follow_up_date ASC, dv.id DESC LIMIT 300'
+    ' ORDER BY dv.follow_up_date ASC, dv.id DESC LIMIT ? OFFSET ?'
 );
-$stmt->execute($params);
+$stmt->execute(array_merge($params, [$per_page, $offset]));
 $rows = $stmt->fetchAll();
+
+$prevUrl = null;
+$nextUrl = null;
+if ($page > 1) {
+    $prevUrl = BASE_URL . '/reminders.php?' . http_build_query(['filter' => $filter, 'page' => $page - 1]);
+}
+if ($page < $totalPages) {
+    $nextUrl = BASE_URL . '/reminders.php?' . http_build_query(['filter' => $filter, 'page' => $page + 1]);
+}
 
 $badge = reminders_count($user);
 
@@ -55,9 +76,12 @@ $badge = reminders_count($user);
 </head>
 <body class="app-bg">
 <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
-    <div class="container">
-        <a class="navbar-brand" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
-        <div class="ms-auto d-flex gap-2">
+    <div class="container position-relative">
+        <div class="position-absolute top-50 start-50 translate-middle text-white fw-semibold text-center" style="font-size: 14px; width: 100%; pointer-events: none;">
+            Smartsupplysolutions
+        </div>
+        <a class="navbar-brand position-relative" style="z-index: 1;" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
+        <div class="ms-auto d-flex gap-2 position-relative" style="z-index: 1;">
             <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php">Reminders<?= $badge > 0 ? ' (' . (int)$badge . ')' : '' ?></a>
             <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/reports.php">Reports</a>
             <?php if (is_admin($user)): ?>
@@ -147,6 +171,13 @@ $badge = reminders_count($user);
                     <?php endif; ?>
                 </tbody>
             </table>
+        </div>
+        <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="text-muted small">Page <?= (int)$page ?> of <?= (int)$totalPages ?> (<?= (int)$total ?>)</div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-app-outline btn-sm <?= $prevUrl ? '' : 'disabled' ?>" href="<?= $prevUrl ? htmlspecialchars($prevUrl) : '#' ?>">Previous</a>
+                <a class="btn btn-app-outline btn-sm <?= $nextUrl ? '' : 'disabled' ?>" href="<?= $nextUrl ? htmlspecialchars($nextUrl) : '#' ?>">Next</a>
+            </div>
         </div>
     </div>
 </div>

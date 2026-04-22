@@ -15,15 +15,18 @@ $reminders_count = reminders_count($user);
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= htmlspecialchars(APP_NAME) ?> - Daily Report</title>
+    <title>Smartsupplysolutions</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <link href="<?= htmlspecialchars(BASE_URL) ?>/assets/app.css" rel="stylesheet">
 </head>
 <body class="app-bg">
 <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
-    <div class="container">
-        <a class="navbar-brand" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
-        <div class="ms-auto d-flex gap-2">
+    <div class="container position-relative">
+        <div class="position-absolute top-50 start-50 translate-middle text-white fw-semibold text-center" style="font-size: 14px; width: 100%; pointer-events: none;">
+            Smartsupplysolutions
+        </div>
+        <a class="navbar-brand position-relative" style="z-index: 1;" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
+        <div class="ms-auto d-flex gap-2 position-relative" style="z-index: 1;">
             <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php">Reminders<?= $reminders_count > 0 ? ' (' . (int)$reminders_count . ')' : '' ?></a>
             <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/reports.php">Reports</a>
             <?php if (is_admin($user)): ?>

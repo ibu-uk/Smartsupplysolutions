@@ -38,9 +38,12 @@ $user = current_user();
 </head>
 <body class="app-bg">
 <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
-    <div class="container">
-        <a class="navbar-brand" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
-        <div class="ms-auto d-flex gap-2">
+    <div class="container position-relative">
+        <div class="position-absolute top-50 start-50 translate-middle text-white fw-semibold text-center" style="font-size: 14px; width: 100%; pointer-events: none;">
+            Smartsupplysolutions
+        </div>
+        <a class="navbar-brand position-relative" style="z-index: 1;" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
+        <div class="ms-auto d-flex gap-2 position-relative" style="z-index: 1;">
             <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/reports.php">Reports</a>
             <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/logout.php">Logout</a>
         </div>

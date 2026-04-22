@@ -17,6 +17,11 @@ $name = trim((string)($_GET['name'] ?? ''));
 $area = trim((string)($_GET['area'] ?? ''));
 $user_id = trim((string)($_GET['user_id'] ?? ''));
 $weekday = trim((string)($_GET['weekday'] ?? ''));
+$page = (int)($_GET['page'] ?? 1);
+$per_page = 50;
+if ($page < 1) {
+    $page = 1;
+}
 
 $where = [];
 $params = [];
@@ -72,14 +77,37 @@ $countStmt = db()->prepare('SELECT COUNT(*) AS c FROM daily_visits dv' . $whereS
 $countStmt->execute($params);
 $totalCount = (int)($countStmt->fetch()['c'] ?? 0);
 
+$totalPages = (int)max(1, (int)ceil($totalCount / $per_page));
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+$offset = ($page - 1) * $per_page;
+
 $dailyStmt = db()->prepare('SELECT dv.visit_date, COUNT(*) AS c FROM daily_visits dv' . $whereSql . ' GROUP BY dv.visit_date ORDER BY dv.visit_date DESC');
 $dailyStmt->execute($params);
 $dailyCounts = $dailyStmt->fetchAll();
 
-$sql = 'SELECT dv.*, u.username FROM daily_visits dv JOIN users u ON u.id = dv.user_id' . $whereSql . ' ORDER BY dv.visit_date DESC, dv.id DESC LIMIT 500';
+$sql = 'SELECT dv.*, u.username FROM daily_visits dv JOIN users u ON u.id = dv.user_id' . $whereSql . ' ORDER BY dv.visit_date DESC, dv.id DESC LIMIT ? OFFSET ?';
 $stmt = db()->prepare($sql);
-$stmt->execute($params);
+$stmt->execute(array_merge($params, [$per_page, $offset]));
 $rows = $stmt->fetchAll();
+
+$baseQuery = [
+    'from' => $from,
+    'to' => $to,
+    'name' => $name,
+    'area' => $area,
+    'user_id' => $user_id,
+    'weekday' => $weekday,
+];
+$prevUrl = null;
+$nextUrl = null;
+if ($page > 1) {
+    $prevUrl = BASE_URL . '/reports.php?' . http_build_query(array_merge($baseQuery, ['page' => $page - 1]));
+}
+if ($page < $totalPages) {
+    $nextUrl = BASE_URL . '/reports.php?' . http_build_query(array_merge($baseQuery, ['page' => $page + 1]));
+}
 
 ?><!doctype html>
 <html lang="ar" dir="rtl">
@@ -92,9 +120,12 @@ $rows = $stmt->fetchAll();
 </head>
 <body class="app-bg">
 <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
-    <div class="container">
-        <a class="navbar-brand" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
-        <div class="ms-auto d-flex gap-2">
+    <div class="container position-relative">
+        <div class="position-absolute top-50 start-50 translate-middle text-white fw-semibold text-center" style="font-size: 14px; width: 100%; pointer-events: none;">
+            Smartsupplysolutions
+        </div>
+        <a class="navbar-brand position-relative" style="z-index: 1;" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php"><?= htmlspecialchars(APP_NAME) ?></a>
+        <div class="ms-auto d-flex gap-2 position-relative" style="z-index: 1;">
             <?php $reminders_count = reminders_count($user); ?>
             <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php">Reminders<?= $reminders_count > 0 ? ' (' . (int)$reminders_count . ')' : '' ?></a>
             <a class="btn btn-sm btn-nav" href="<?= htmlspecialchars(BASE_URL) ?>/daily_report.php">New</a>
@@ -163,7 +194,7 @@ $rows = $stmt->fetchAll();
                 <div class="col-md-12 d-flex gap-2 align-self-end">
                     <button class="btn btn-app" type="submit">بحث</button>
                     <a class="btn btn-app-outline" href="<?= htmlspecialchars(BASE_URL) ?>/reports.php">مسح</a>
-                    <a class="btn btn-app-outline" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&name=<?= urlencode($name) ?>&area=<?= urlencode($area) ?>&user_id=<?= urlencode($user_id) ?>">طباعة الكل</a>
+                    <a class="btn btn-app-outline" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&name=<?= urlencode($name) ?>&area=<?= urlencode($area) ?>&user_id=<?= urlencode($user_id) ?>&weekday=<?= urlencode($weekday) ?>">طباعة الكل</a>
                 </div>
             </form>
         </div>
@@ -275,6 +306,13 @@ $rows = $stmt->fetchAll();
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+        <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="text-muted small">Page <?= (int)$page ?> of <?= (int)$totalPages ?> (<?= (int)$totalCount ?>)</div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-app-outline btn-sm <?= $prevUrl ? '' : 'disabled' ?>" href="<?= $prevUrl ? htmlspecialchars($prevUrl) : '#' ?>">Previous</a>
+                <a class="btn btn-app-outline btn-sm <?= $nextUrl ? '' : 'disabled' ?>" href="<?= $nextUrl ? htmlspecialchars($nextUrl) : '#' ?>">Next</a>
+            </div>
         </div>
     </div>
 </div>
