@@ -41,7 +41,7 @@ $users = $stmt->fetchAll();
     </div>
 </nav>
 
-<div class="container py-4" style="max-width: 1100px;">
+<div class="container py-4" style="max-width: 1600px;">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h5 mb-0">المستخدمين</h1>
         <div class="text-muted small"><?= htmlspecialchars($user['username'] ?? '') ?></div>

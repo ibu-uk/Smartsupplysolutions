@@ -73,6 +73,12 @@ body.app-bg{
   box-shadow:0 0 0 .25rem rgba(55,65,81,.12);
 }
 
+.table-responsive{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x pan-y;
+}
+
 .table thead th{
   white-space:nowrap;
 }
@@ -99,20 +105,4 @@ body.app-bg{
   border-color:rgba(25,135,84,.28);
   background:rgba(25,135,84,.10);
   color:#198754;
-}
-
-body.app-login-bg{
-  position:relative;
-}
-
-body.app-login-bg::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  background-image:url("../assets/Screenshot%202026-04-22%20153610.png");
-  background-repeat:no-repeat;
-  background-position:center 60px;
-  background-size:220px auto;
-  opacity:.08;
-  pointer-events:none;
 }

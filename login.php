@@ -21,7 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!login_user($username, $password)) {
         $error = 'Invalid username or password.';
     } else {
-        flash_set('welcome', 'مرحباً بك في Smartsupplysolutions');
+        $u = current_user();
+        $displayName = (string)($u['username'] ?? $username);
+        flash_set('welcome', 'مرحباً ' . $displayName . '، أهلاً بك في Smartsupplysolutions');
         header('Location: ' . BASE_URL . '/daily_report.php');
         exit;
     }
@@ -37,18 +39,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="<?= htmlspecialchars(BASE_URL) ?>/assets/app.css" rel="stylesheet">
 </head>
-<body class="app-bg app-login-bg">
-<div class="container py-5" style="max-width: 420px;">
-    <div class="text-center mb-3">
+<body class="app-bg">
+<div class="container min-vh-100 d-flex align-items-center justify-content-center py-4">
+  <div style="width: 100%; max-width: 520px;">
+    <div class="text-center mb-4">
         <img
             src="<?= htmlspecialchars(BASE_URL . '/assets/' . rawurlencode('Screenshot 2026-04-22 153610.png')) ?>"
             alt="Smartsupplysolutions"
-            style="height: 44px; width: auto;"
+            style="display: block; margin: 0 auto; width: 100%; max-width: 240px; height: auto;"
         >
-        <div class="mt-2 fw-semibold" style="font-size: 16px;">Smartsupplysolutions</div>
     </div>
     <div class="card shadow-sm app-card">
-        <div class="card-body p-4">
+        <div class="card-body p-5">
             <h1 class="h5 mb-3 app-title">تسجيل الدخول</h1>
 
             <?php if ($error !== ''): ?>
@@ -68,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
         </div>
     </div>
+  </div>
 </div>
 
 <?php if ($loggedOut): ?>

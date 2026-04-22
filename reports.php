@@ -159,7 +159,7 @@ if ($page < $totalPages) {
     </div>
 </nav>
 
-<div class="container py-4" style="max-width: 1200px;">
+<div class="container py-4" style="max-width: 1600px;">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1 class="h5 mb-0">التقارير</h1>
         <div class="text-muted small"><?= htmlspecialchars($user['username'] ?? '') ?></div>
@@ -220,6 +220,10 @@ if ($page < $totalPages) {
                     <button class="btn btn-app" type="submit">بحث</button>
                     <a class="btn btn-app-outline" href="<?= htmlspecialchars(BASE_URL) ?>/reports.php">مسح</a>
                     <a class="btn btn-app-outline" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&name=<?= urlencode($name) ?>&area=<?= urlencode($area) ?>&user_id=<?= urlencode($user_id) ?>&weekday=<?= urlencode($weekday) ?>">طباعة الكل</a>
+                    <a class="btn btn-app-outline" href="<?= htmlspecialchars(BASE_URL) ?>/export_reports.php?from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>&name=<?= urlencode($name) ?>&area=<?= urlencode($area) ?>&user_id=<?= urlencode($user_id) ?>&weekday=<?= urlencode($weekday) ?>">تصدير Excel</a>
+                    <?php if (is_admin($user)): ?>
+                        <a class="btn btn-app-outline" href="<?= htmlspecialchars(BASE_URL) ?>/import_csv.php">استيراد CSV</a>
+                    <?php endif; ?>
                 </div>
             </form>
         </div>
@@ -298,6 +302,9 @@ if ($page < $totalPages) {
                             <td class="no-print text-end text-nowrap">
                                 <div class="d-flex justify-content-end">
                                     <div class="btn-group" role="group">
+                                        <a class="btn btn-app-outline btn-sm" title="تصدير Excel" aria-label="تصدير Excel" href="<?= htmlspecialchars(BASE_URL) ?>/export_report.php?id=<?= (int)$r['id'] ?>">
+                                            <i class="bi bi-file-earmark-excel"></i>
+                                        </a>
                                         <a class="btn btn-app-outline btn-sm" title="طباعة" aria-label="طباعة" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&mode=single&id=<?= (int)$r['id'] ?>">
                                             <i class="bi bi-printer"></i>
                                         </a>

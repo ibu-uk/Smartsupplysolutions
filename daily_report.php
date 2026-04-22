@@ -43,7 +43,7 @@ $welcome = flash_get('welcome');
     </div>
 </nav>
 
-<div class="container py-4" style="max-width: 980px;">
+<div class="container py-4" style="max-width: 1200px;">
     <div class="card shadow-sm app-card">
         <div class="card-body p-4">
             <div class="d-flex justify-content-between align-items-center mb-3">

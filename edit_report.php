@@ -66,7 +66,7 @@ $user = current_user();
     </div>
 </nav>
 
-<div class="container py-4" style="max-width: 980px;">
+<div class="container py-4" style="max-width: 1200px;">
     <div class="card shadow-sm app-card">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
