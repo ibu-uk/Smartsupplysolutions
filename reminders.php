@@ -29,11 +29,6 @@ if ($filter === 'due') {
     $where[] = 'dv.follow_up_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)';
 }
 
-if (!is_admin($user)) {
-    $where[] = 'dv.user_id = ?';
-    $params[] = (int)$user['id'];
-}
-
 $whereSql = ' WHERE ' . implode(' AND ', $where);
 
 $countStmt = db()->prepare('SELECT COUNT(*) AS c FROM daily_visits dv' . $whereSql);
@@ -163,11 +158,9 @@ $badge = reminders_count($user);
                                         <a class="btn btn-app-outline btn-sm" title="طباعة" aria-label="طباعة" target="_blank" href="<?= htmlspecialchars(BASE_URL) ?>/print.php?autoprint=1&mode=single&id=<?= (int)$r['id'] ?>">
                                             <i class="bi bi-printer"></i>
                                         </a>
-                                        <?php if (is_admin($user)): ?>
-                                            <a class="btn btn-app-outline btn-sm" title="تعديل" aria-label="تعديل" href="<?= htmlspecialchars(BASE_URL) ?>/edit_report.php?id=<?= (int)$r['id'] ?>">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </a>
-                                        <?php endif; ?>
+                                        <a class="btn btn-app-outline btn-sm" title="تعديل" aria-label="تعديل" href="<?= htmlspecialchars(BASE_URL) ?>/edit_report.php?id=<?= (int)$r['id'] ?>">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
                                     </div>
                                 </div>
                             </td>

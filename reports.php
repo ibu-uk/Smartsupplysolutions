@@ -18,9 +18,13 @@ $area = trim((string)($_GET['area'] ?? ''));
 $user_id = trim((string)($_GET['user_id'] ?? ''));
 $weekday = trim((string)($_GET['weekday'] ?? ''));
 $page = (int)($_GET['page'] ?? 1);
+$month_page = (int)($_GET['month_page'] ?? 1);
 $per_page = 50;
 if ($page < 1) {
     $page = 1;
+}
+if ($month_page < 1) {
+    $month_page = 1;
 }
 
 $where = [];
@@ -78,14 +82,30 @@ $countStmt->execute($params);
 $totalCount = (int)($countStmt->fetch()['c'] ?? 0);
 
 $totalPages = (int)max(1, (int)ceil($totalCount / $per_page));
-if ($page > $totalPages) {
-    $page = $totalPages;
-}
+$page = (int)min($page, $totalPages);
 $offset = ($page - 1) * $per_page;
 
-$dailyStmt = db()->prepare('SELECT dv.visit_date, COUNT(*) AS c FROM daily_visits dv' . $whereSql . ' GROUP BY dv.visit_date ORDER BY dv.visit_date DESC');
-$dailyStmt->execute($params);
-$dailyCounts = $dailyStmt->fetchAll();
+$months_per_page = 12;
+$monthsWhereSql = $whereSql;
+
+$monthsCountStmt = db()->prepare(
+    "SELECT COUNT(*) AS c FROM (SELECT DATE_FORMAT(dv.visit_date, '%Y-%m') AS ym FROM daily_visits dv" . $monthsWhereSql . " GROUP BY ym) x"
+);
+$monthsCountStmt->execute($params);
+$monthsTotal = (int)($monthsCountStmt->fetch()['c'] ?? 0);
+$monthsTotalPages = (int)max(1, (int)ceil($monthsTotal / $months_per_page));
+$month_page = (int)min($month_page, $monthsTotalPages);
+$monthsOffset = ($month_page - 1) * $months_per_page;
+
+$monthlyStmt = db()->prepare(
+    "SELECT DATE_FORMAT(dv.visit_date, '%Y-%m') AS ym, COUNT(*) AS c
+     FROM daily_visits dv" . $monthsWhereSql . "
+     GROUP BY ym
+     ORDER BY ym DESC
+     LIMIT ? OFFSET ?"
+);
+$monthlyStmt->execute(array_merge($params, [$months_per_page, $monthsOffset]));
+$monthlyCounts = $monthlyStmt->fetchAll();
 
 $sql = 'SELECT dv.*, u.username, (SELECT COUNT(*) FROM daily_visit_contacts c WHERE c.daily_visit_id = dv.id) AS contacts_count
         FROM daily_visits dv JOIN users u ON u.id = dv.user_id' . $whereSql . ' ORDER BY dv.visit_date DESC, dv.id DESC LIMIT ? OFFSET ?';
@@ -126,6 +146,15 @@ if ($page < $totalPages) {
     $nextUrl = BASE_URL . '/reports.php?' . http_build_query(array_merge($baseQuery, ['page' => $page + 1]));
 }
 
+$prevMonthUrl = null;
+$nextMonthUrl = null;
+if ($month_page > 1) {
+    $prevMonthUrl = BASE_URL . '/reports.php?' . http_build_query(array_merge($baseQuery, ['page' => $page, 'month_page' => $month_page - 1]));
+}
+if ($month_page < $monthsTotalPages) {
+    $nextMonthUrl = BASE_URL . '/reports.php?' . http_build_query(array_merge($baseQuery, ['page' => $page, 'month_page' => $month_page + 1]));
+}
+
 ?><!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -136,6 +165,21 @@ if ($page < $totalPages) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link href="<?= htmlspecialchars(BASE_URL) ?>/assets/app.css" rel="stylesheet">
+    <style>
+        .table-sticky-header thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: var(--bs-body-bg);
+        }
+        #backToTopBtn {
+            position: fixed;
+            left: 18px;
+            bottom: 18px;
+            z-index: 1050;
+            display: none;
+        }
+    </style>
 </head>
 <body class="app-bg">
 <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
@@ -242,30 +286,42 @@ if ($page < $totalPages) {
             <div class="card shadow-sm app-card h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div class="text-muted small">الإجمالي حسب التاريخ</div>
+                        <div class="text-muted small">الإجمالي حسب الشهر</div>
+                        <button class="btn btn-app-outline btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#dailyCountsPanel" aria-expanded="false" aria-controls="dailyCountsPanel">
+                            عرض / إخفاء
+                        </button>
                     </div>
-                    <div class="table-responsive">
+                    <div class="collapse show" id="dailyCountsPanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                            <div class="text-muted small">Page <?= (int)$month_page ?> of <?= (int)$monthsTotalPages ?> (<?= (int)$monthsTotal ?>)</div>
+                            <div class="d-flex gap-2">
+                                <a class="btn btn-app-outline btn-sm <?= $prevMonthUrl ? '' : 'disabled' ?>" href="<?= $prevMonthUrl ? htmlspecialchars($prevMonthUrl) : '#' ?>">Previous</a>
+                                <a class="btn btn-app-outline btn-sm <?= $nextMonthUrl ? '' : 'disabled' ?>" href="<?= $nextMonthUrl ? htmlspecialchars($nextMonthUrl) : '#' ?>">Next</a>
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="max-height: 260px; overflow: auto;">
                         <table class="table table-sm mb-0">
                             <thead>
                                 <tr>
-                                    <th>التاريخ</th>
+                                    <th>الشهر</th>
                                     <th class="text-nowrap">العدد</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($dailyCounts as $d): ?>
+                                <?php foreach ($monthlyCounts as $d): ?>
                                     <tr>
-                                        <td><?= htmlspecialchars((string)$d['visit_date']) ?></td>
+                                        <td><?= htmlspecialchars((string)$d['ym']) ?></td>
                                         <td><?= (int)$d['c'] ?></td>
                                     </tr>
                                 <?php endforeach; ?>
-                                <?php if (!$dailyCounts): ?>
+                                <?php if (!$monthlyCounts): ?>
                                     <tr>
                                         <td colspan="2" class="text-muted">لا يوجد بيانات</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -274,7 +330,7 @@ if ($page < $totalPages) {
 
     <div class="card shadow-sm app-card">
         <div class="table-responsive">
-            <table class="table table-striped table-hover mb-0 align-middle">
+            <table class="table table-striped table-hover mb-0 align-middle table-sticky-header">
                 <thead>
                     <tr>
                         <th>#</th>

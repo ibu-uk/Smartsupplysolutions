@@ -11,7 +11,7 @@ $user = current_user();
 $flashSuccess = flash_get('success');
 $flashError = flash_get('error');
 
-$stmt = db()->query('SELECT id, username, created_at FROM users ORDER BY id DESC');
+$stmt = db()->query('SELECT id, username, is_admin, created_at FROM users ORDER BY id DESC');
 $users = $stmt->fetchAll();
 
 ?><!doctype html>
@@ -48,10 +48,16 @@ $users = $stmt->fetchAll();
     </div>
 
     <?php if ($flashSuccess !== null && $flashSuccess !== ''): ?>
-        <div class="alert alert-success"><?= htmlspecialchars($flashSuccess) ?></div>
+        <div id="flashSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
+            <?= htmlspecialchars($flashSuccess) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     <?php endif; ?>
     <?php if ($flashError !== null && $flashError !== ''): ?>
-        <div class="alert alert-danger"><?= htmlspecialchars($flashError) ?></div>
+        <div id="flashError" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?= htmlspecialchars($flashError) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     <?php endif; ?>
 
     <div class="row g-3">
@@ -86,6 +92,7 @@ $users = $stmt->fetchAll();
                                 <tr>
                                     <th>#</th>
                                     <th>اسم المستخدم</th>
+                                    <th>Admin</th>
                                     <th>تاريخ الإنشاء</th>
                                     <th>تغيير كلمة المرور</th>
                                     <th class="text-end">الإجراءات</th>
@@ -96,6 +103,24 @@ $users = $stmt->fetchAll();
                                     <tr>
                                         <td><?= (int)$u['id'] ?></td>
                                         <td><?= htmlspecialchars((string)$u['username']) ?></td>
+                                        <td class="text-nowrap">
+                                            <div class="d-flex gap-2 align-items-center">
+                                                <span class="badge <?= ((int)($u['is_admin'] ?? 0) === 1) ? 'text-bg-success' : 'text-bg-secondary' ?>">
+                                                    <?= ((int)($u['is_admin'] ?? 0) === 1) ? 'Yes' : 'No' ?>
+                                                </span>
+                                                <?php if ((int)$u['id'] !== (int)($user['id'] ?? 0) && (string)$u['username'] !== 'admin'): ?>
+                                                    <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/toggle_admin.php" class="m-0">
+                                                        <input type="hidden" name="id" value="<?= (int)$u['id'] ?>">
+                                                        <input type="hidden" name="make_admin" value="<?= ((int)($u['is_admin'] ?? 0) === 1) ? '0' : '1' ?>">
+                                                        <button class="btn btn-app-outline btn-sm" type="submit">
+                                                            <?= ((int)($u['is_admin'] ?? 0) === 1) ? 'Remove' : 'Make' ?>
+                                                        </button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <span class="text-muted small">-</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
                                         <td class="text-nowrap"><?= htmlspecialchars((string)$u['created_at']) ?></td>
                                         <td class="text-end" style="min-width: 260px;">
                                             <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/update_user.php" class="d-flex gap-2 justify-content-end">
@@ -122,7 +147,7 @@ $users = $stmt->fetchAll();
                                 <?php endforeach; ?>
                                 <?php if (!$users): ?>
                                     <tr>
-                                        <td colspan="5" class="text-muted">لا يوجد مستخدمين</td>
+                                        <td colspan="6" class="text-muted">لا يوجد مستخدمين</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
@@ -155,5 +180,22 @@ $users = $stmt->fetchAll();
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(() => {
+  const ids = ['flashSuccess', 'flashError'];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    window.setTimeout(() => {
+      try {
+        const alert = bootstrap.Alert.getOrCreateInstance(el);
+        alert.close();
+      } catch (e) {
+        el.remove();
+      }
+    }, 2500);
+  });
+})();
+</script>
 </body>
 </html>

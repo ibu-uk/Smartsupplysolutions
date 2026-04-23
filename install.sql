@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `username` VARCHAR(190) NOT NULL,
   `password_hash` VARCHAR(255) NOT NULL,
+  `is_admin` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_users_username` (`username`)
@@ -49,6 +50,6 @@ CREATE TABLE IF NOT EXISTS `daily_visit_contacts` (
   CONSTRAINT `fk_daily_visit_contacts_visit_id` FOREIGN KEY (`daily_visit_id`) REFERENCES `daily_visits` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
-INSERT INTO `users` (`username`, `password_hash`)
-VALUES ('admin', '$2y$10$pvkw62KQArrjPKMfqeUxueZpq3vVfY1Hs6bmZxRIaQxxj0n5MR.a6')
-ON DUPLICATE KEY UPDATE `username` = `username`;
+INSERT INTO `users` (`username`, `password_hash`, `is_admin`)
+VALUES ('admin', '$2y$10$pvkw62KQArrjPKMfqeUxueZpq3vVfY1Hs6bmZxRIaQxxj0n5MR.a6', 1)
+ON DUPLICATE KEY UPDATE `username` = `username`, `is_admin` = 1;

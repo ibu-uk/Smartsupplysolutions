@@ -36,10 +36,6 @@ $redirectUrl = BASE_URL . '/reminders.php?' . http_build_query(['filter' => $fil
 // Ensure record exists and user has access
 $params = [$id];
 $sql = 'SELECT id, user_id FROM daily_visits WHERE id = ?';
-if (!is_admin($user)) {
-    $sql .= ' AND user_id = ?';
-    $params[] = (int)$user['id'];
-}
 
 $stmt = db()->prepare($sql);
 $stmt->execute($params);

@@ -238,18 +238,22 @@ document.getElementById('visit_type')?.addEventListener('change', (e) => {
 
 <?php if ($reminders_count > 0): ?>
 <div class="modal fade" id="remindersModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">متابعات مستحقة</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        يوجد لديك عدد <strong><?= (int)$reminders_count ?></strong> متابعة مستحقة / متأخرة.
-      </div>
-      <div class="modal-footer">
-        <a class="btn btn-app" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php">عرض المتابعات</a>
-        <button type="button" class="btn btn-app-outline" data-bs-dismiss="modal">إغلاق</button>
+      <div class="modal-body text-center p-4">
+        <div class="d-flex justify-content-center mb-3">
+          <div class="rounded-circle border d-flex align-items-center justify-content-center" style="width: 72px; height: 72px; border-width: 3px;">
+            <i class="bi bi-bell" style="font-size: 34px;"></i>
+          </div>
+        </div>
+        <div class="fw-semibold" style="font-size: 18px;">متابعات مستحقة</div>
+        <div class="alert alert-warning mt-3 mb-0" role="alert" style="text-align: start;">
+          يوجد لديك عدد <strong><?= (int)$reminders_count ?></strong> متابعة مستحقة / متأخرة.
+        </div>
+        <div class="d-flex justify-content-center gap-2 mt-4">
+          <a class="btn btn-app px-3" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php">عرض المتابعات</a>
+          <button type="button" class="btn btn-app-outline px-3" data-bs-dismiss="modal">إغلاق</button>
+        </div>
       </div>
     </div>
   </div>

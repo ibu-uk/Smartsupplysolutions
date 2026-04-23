@@ -31,7 +31,7 @@ function current_user(): ?array
         return null;
     }
 
-    $stmt = db()->prepare('SELECT id, username FROM users WHERE id = ?');
+    $stmt = db()->prepare('SELECT id, username, is_admin FROM users WHERE id = ?');
     $stmt->execute([$_SESSION['user_id']]);
     $user = $stmt->fetch();
 
@@ -56,11 +56,6 @@ function reminders_count(?array $user = null): int
     $where = "dv.follow_up_date IS NOT NULL AND dv.follow_up_date <= CURDATE() AND (dv.follow_up_status IS NULL OR dv.follow_up_status = 'next')";
     $params = [];
 
-    if (!is_admin($u)) {
-        $where .= ' AND dv.user_id = ?';
-        $params[] = (int)$u['id'];
-    }
-
     $stmt = db()->prepare('SELECT COUNT(*) AS c FROM daily_visits dv WHERE ' . $where);
     $stmt->execute($params);
     return (int)($stmt->fetch()['c'] ?? 0);
@@ -72,6 +67,11 @@ function is_admin(?array $user = null): bool
     if (!$u) {
         return false;
     }
+
+    if (array_key_exists('is_admin', $u)) {
+        return (int)$u['is_admin'] === 1;
+    }
+
     return ($u['username'] ?? null) === 'admin';
 }
 
