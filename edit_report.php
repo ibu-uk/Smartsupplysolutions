@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/auth.php';
 require_login();
-require_admin();
+
+ $user = current_user();
 
 require_once __DIR__ . '/dropdowns.php';
 
@@ -15,8 +16,15 @@ if ($id === '' || !ctype_digit($id)) {
     exit;
 }
 
-$stmt = db()->prepare('SELECT dv.*, u.username FROM daily_visits dv JOIN users u ON u.id = dv.user_id WHERE dv.id = ? LIMIT 1');
-$stmt->execute([(int)$id]);
+$params = [(int)$id];
+$sql = 'SELECT dv.*, u.username FROM daily_visits dv JOIN users u ON u.id = dv.user_id WHERE dv.id = ?';
+if (!is_admin($user)) {
+    $sql .= ' AND dv.user_id = ?';
+    $params[] = (int)$user['id'];
+}
+$sql .= ' LIMIT 1';
+$stmt = db()->prepare($sql);
+$stmt->execute($params);
 $r = $stmt->fetch();
 
 if (!$r) {
@@ -35,8 +43,6 @@ if (!$contacts) {
         'mobile' => (string)($r['mobile'] ?? ''),
     ]];
 }
-
-$user = current_user();
 
 ?><!doctype html>
 <html lang="ar" dir="rtl">

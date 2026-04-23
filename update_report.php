@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/auth.php';
 require_login();
-require_admin();
+
+$user = current_user();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ' . BASE_URL . '/reports.php');
@@ -15,6 +16,23 @@ $id = (string)($_POST['id'] ?? '');
 if ($id === '' || !ctype_digit($id)) {
     http_response_code(400);
     echo 'Invalid id';
+    exit;
+}
+
+// Ensure record exists and user has access
+$params = [(int)$id];
+$sql = 'SELECT id, user_id FROM daily_visits WHERE id = ?';
+if (!is_admin($user)) {
+    $sql .= ' AND user_id = ?';
+    $params[] = (int)$user['id'];
+}
+$sql .= ' LIMIT 1';
+$stmt = db()->prepare($sql);
+$stmt->execute($params);
+$row = $stmt->fetch();
+if (!$row) {
+    http_response_code(404);
+    echo 'Not found';
     exit;
 }
 

@@ -12,6 +12,11 @@ if (!in_array($filter, ['due', 'upcoming', 'all'], true)) {
     $filter = 'due';
 }
 
+$status = (string)($_GET['status'] ?? 'active');
+if (!in_array($status, ['active', 'done', 'cancelled', 'closed'], true)) {
+    $status = 'active';
+}
+
 $name = trim((string)($_GET['name'] ?? ''));
 $mobile = trim((string)($_GET['mobile'] ?? ''));
 $from = (string)($_GET['from'] ?? '');
@@ -24,7 +29,15 @@ if ($page < 1) {
 }
 
 $where = ['dv.follow_up_date IS NOT NULL'];
-$where[] = "(dv.follow_up_status IS NULL OR dv.follow_up_status = 'next')";
+$statusSql = "(dv.follow_up_status IS NULL OR dv.follow_up_status = 'next')";
+if ($status === 'done') {
+    $statusSql = "dv.follow_up_status = 'done'";
+} elseif ($status === 'cancelled') {
+    $statusSql = "dv.follow_up_status = 'cancelled'";
+} elseif ($status === 'closed') {
+    $statusSql = "dv.follow_up_status IN ('done','cancelled')";
+}
+$where[] = $statusSql;
 $params = [];
 
 if ($filter === 'due') {
@@ -79,6 +92,7 @@ $prevUrl = null;
 $nextUrl = null;
 $baseQuery = [
     'filter' => $filter,
+    'status' => $status,
     'name' => $name,
     'mobile' => $mobile,
     'from' => $from,
@@ -134,6 +148,12 @@ $badge = reminders_count($user);
         <div class="card-body">
             <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
                 <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(array_merge($baseQuery, ['status' => 'active', 'page' => 1]))) ?>">المتابعات</a>
+                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(array_merge($baseQuery, ['status' => 'done', 'page' => 1]))) ?>">مكتملة</a>
+                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(array_merge($baseQuery, ['status' => 'cancelled', 'page' => 1]))) ?>">ملغاة</a>
+                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(array_merge($baseQuery, ['status' => 'closed', 'page' => 1]))) ?>">الكل (مغلق)</a>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
                     <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(array_merge($baseQuery, ['filter' => 'due', 'page' => 1]))) ?>">مستحقة / متأخرة</a>
                     <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(array_merge($baseQuery, ['filter' => 'upcoming', 'page' => 1]))) ?>">قادمة (7 أيام)</a>
                     <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(array_merge($baseQuery, ['filter' => 'all', 'page' => 1]))) ?>">الكل</a>
@@ -143,6 +163,7 @@ $badge = reminders_count($user);
 
             <form class="row g-2 mt-3" method="get">
                 <input type="hidden" name="filter" value="<?= htmlspecialchars($filter) ?>">
+                <input type="hidden" name="status" value="<?= htmlspecialchars($status) ?>">
                 <div class="col-md-4">
                     <input type="text" name="name" value="<?= htmlspecialchars($name) ?>" class="form-control form-control-sm" placeholder="بحث بالاسم (العيادة/الشخص)">
                 </div>
@@ -185,7 +206,15 @@ $badge = reminders_count($user);
                 </thead>
                 <tbody>
                     <?php foreach ($rows as $r): ?>
-                        <tr>
+                        <?php
+                            $rowClass = '';
+                            if ((string)($r['follow_up_status'] ?? '') === 'done') {
+                                $rowClass = 'table-success';
+                            } elseif ((string)($r['follow_up_status'] ?? '') === 'cancelled') {
+                                $rowClass = 'table-danger';
+                            }
+                        ?>
+                        <tr class="<?= htmlspecialchars($rowClass) ?>">
                             <td><?= (int)$r['id'] ?></td>
                             <td class="text-nowrap"><?= htmlspecialchars((string)$r['follow_up_date']) ?></td>
                             <td><?= htmlspecialchars((string)$r['area']) ?></td>
@@ -200,16 +229,25 @@ $badge = reminders_count($user);
                                 <?= htmlspecialchars((string)($r['follow_up_action_note'] ?? '')) ?>
                             </td>
                             <td class="no-print text-end" style="min-width: 320px;">
-                                <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/update_follow_up.php" class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
-                                    <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-                                    <input type="hidden" name="filter" value="<?= htmlspecialchars($filter) ?>">
-                                    <input type="hidden" name="page" value="<?= (int)$page ?>">
-                                    <input type="date" name="follow_up_date" class="form-control form-control-sm" value="<?= htmlspecialchars((string)$r['follow_up_date']) ?>" style="max-width: 160px;">
-                                    <input type="text" name="note" class="form-control form-control-sm" placeholder="ملاحظة" style="max-width: 220px;" value="<?= htmlspecialchars((string)($r['follow_up_action_note'] ?? '')) ?>">
-                                    <button type="submit" name="action" value="next" class="btn btn-app-outline btn-sm">Next</button>
-                                    <button type="submit" name="action" value="done" class="btn btn-app btn-sm">Done</button>
-                                    <button type="submit" name="action" value="cancel" class="btn btn-app-outline btn-sm">Cancel</button>
-                                </form>
+                                <?php if ($status === 'active'): ?>
+                                    <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/update_follow_up.php" class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
+                                        <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                                        <input type="hidden" name="filter" value="<?= htmlspecialchars($filter) ?>">
+                                        <input type="hidden" name="status" value="<?= htmlspecialchars($status) ?>">
+                                        <input type="hidden" name="name" value="<?= htmlspecialchars($name) ?>">
+                                        <input type="hidden" name="mobile" value="<?= htmlspecialchars($mobile) ?>">
+                                        <input type="hidden" name="from" value="<?= htmlspecialchars($from) ?>">
+                                        <input type="hidden" name="to" value="<?= htmlspecialchars($to) ?>">
+                                        <input type="hidden" name="page" value="<?= (int)$page ?>">
+                                        <input type="date" name="follow_up_date" class="form-control form-control-sm" value="<?= htmlspecialchars((string)$r['follow_up_date']) ?>" style="max-width: 160px;">
+                                        <input type="text" name="note" class="form-control form-control-sm" placeholder="ملاحظة" style="max-width: 220px;" value="<?= htmlspecialchars((string)($r['follow_up_action_note'] ?? '')) ?>">
+                                        <button type="submit" name="action" value="next" class="btn btn-app-outline btn-sm">Next</button>
+                                        <button type="submit" name="action" value="done" class="btn btn-app btn-sm">Done</button>
+                                        <button type="submit" name="action" value="cancel" class="btn btn-app-outline btn-sm">Cancel</button>
+                                    </form>
+                                <?php else: ?>
+                                    <span class="text-muted">-</span>
+                                <?php endif; ?>
                             </td>
                             <td class="no-print text-end text-nowrap">
                                 <div class="d-flex justify-content-end">

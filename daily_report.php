@@ -11,6 +11,14 @@ $user = current_user();
 $reminders_count = reminders_count($user);
 $welcome = flash_get('welcome');
 
+$cookieShown = isset($_COOKIE['reminders_popup_shown']) && $_COOKIE['reminders_popup_shown'] === '1';
+$sessionShown = !empty($_SESSION['reminders_popup_shown']);
+$showRemindersPopup = ($reminders_count > 0) && !$cookieShown && !$sessionShown;
+if ($showRemindersPopup) {
+    $_SESSION['reminders_popup_shown'] = 1;
+    setcookie('reminders_popup_shown', '1', 0, '/');
+}
+
 ?><!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -236,7 +244,7 @@ document.getElementById('visit_type')?.addEventListener('change', (e) => {
 });
 </script>
 
-<?php if ($reminders_count > 0): ?>
+<?php if ($showRemindersPopup): ?>
 <div class="modal fade" id="remindersModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
@@ -313,7 +321,7 @@ document.querySelectorAll('.js-date').forEach((el) => {
   });
 });
 </script>
-<?php if ($reminders_count > 0): ?>
+<?php if ($showRemindersPopup): ?>
 <script>
 window.addEventListener('load', () => {
   const el = document.getElementById('remindersModal');

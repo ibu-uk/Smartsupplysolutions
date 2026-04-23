@@ -17,10 +17,18 @@ $action = (string)($_POST['action'] ?? '');
 $followUpDate = trim((string)($_POST['follow_up_date'] ?? ''));
 $note = trim((string)($_POST['note'] ?? ''));
 $filter = (string)($_POST['filter'] ?? 'due');
+$status = (string)($_POST['status'] ?? 'active');
+$name = trim((string)($_POST['name'] ?? ''));
+$mobile = trim((string)($_POST['mobile'] ?? ''));
+$from = (string)($_POST['from'] ?? '');
+$to = (string)($_POST['to'] ?? '');
 $page = (int)($_POST['page'] ?? 1);
 
 if (!in_array($filter, ['due', 'upcoming', 'all'], true)) {
     $filter = 'due';
+}
+if (!in_array($status, ['active', 'done', 'cancelled', 'closed'], true)) {
+    $status = 'active';
 }
 if ($page < 1) {
     $page = 1;
@@ -31,7 +39,15 @@ if ($id <= 0 || !in_array($action, ['next', 'done', 'cancel'], true)) {
     exit;
 }
 
-$redirectUrl = BASE_URL . '/reminders.php?' . http_build_query(['filter' => $filter, 'page' => $page]);
+$redirectUrl = BASE_URL . '/reminders.php?' . http_build_query([
+    'filter' => $filter,
+    'status' => $status,
+    'name' => $name,
+    'mobile' => $mobile,
+    'from' => $from,
+    'to' => $to,
+    'page' => $page,
+]);
 
 // Ensure record exists and user has access
 $params = [$id];

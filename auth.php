@@ -104,11 +104,13 @@ function login_user(string $username, string $password): bool
     }
 
     $_SESSION['user_id'] = (int)$user['id'];
+    unset($_SESSION['reminders_popup_shown']);
     return true;
 }
 
 function logout_user(): void
 {
     unset($_SESSION['user_id']);
+    unset($_SESSION['reminders_popup_shown']);
     session_regenerate_id(true);
 }

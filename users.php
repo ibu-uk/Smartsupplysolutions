@@ -102,7 +102,18 @@ $users = $stmt->fetchAll();
                                 <?php foreach ($users as $u): ?>
                                     <tr>
                                         <td><?= (int)$u['id'] ?></td>
-                                        <td><?= htmlspecialchars((string)$u['username']) ?></td>
+                                        <td style="min-width: 220px;">
+                                            <?php if (((string)$u['username']) !== 'admin'): ?>
+                                                <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/update_user.php" class="d-flex gap-2">
+                                                    <input type="hidden" name="mode" value="username">
+                                                    <input type="hidden" name="id" value="<?= (int)$u['id'] ?>">
+                                                    <input type="text" name="username" class="form-control form-control-sm" value="<?= htmlspecialchars((string)$u['username']) ?>" required>
+                                                    <button class="btn btn-app-outline btn-sm" type="submit">حفظ</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <span class="fw-semibold"><?= htmlspecialchars((string)$u['username']) ?></span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="text-nowrap">
                                             <div class="d-flex gap-2 align-items-center">
                                                 <span class="badge <?= ((int)($u['is_admin'] ?? 0) === 1) ? 'text-bg-success' : 'text-bg-secondary' ?>">
@@ -124,6 +135,7 @@ $users = $stmt->fetchAll();
                                         <td class="text-nowrap"><?= htmlspecialchars((string)$u['created_at']) ?></td>
                                         <td class="text-end" style="min-width: 260px;">
                                             <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/update_user.php" class="d-flex gap-2 justify-content-end">
+                                                <input type="hidden" name="mode" value="password">
                                                 <input type="hidden" name="id" value="<?= (int)$u['id'] ?>">
                                                 <input type="password" name="password" class="form-control" placeholder="كلمة مرور جديدة" minlength="4" required>
                                                 <button class="btn btn-app-outline btn-sm" type="submit">حفظ</button>
