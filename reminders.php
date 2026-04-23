@@ -12,6 +12,11 @@ if (!in_array($filter, ['due', 'upcoming', 'all'], true)) {
     $filter = 'due';
 }
 
+$name = trim((string)($_GET['name'] ?? ''));
+$mobile = trim((string)($_GET['mobile'] ?? ''));
+$from = (string)($_GET['from'] ?? '');
+$to = (string)($_GET['to'] ?? '');
+
 $page = (int)($_GET['page'] ?? 1);
 $per_page = 50;
 if ($page < 1) {
@@ -27,6 +32,27 @@ if ($filter === 'due') {
 } elseif ($filter === 'upcoming') {
     $where[] = 'dv.follow_up_date > CURDATE()';
     $where[] = 'dv.follow_up_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)';
+}
+
+if ($name !== '') {
+    $where[] = '(dv.clinic_name LIKE ? OR dv.person_name LIKE ?)';
+    $like = '%' . $name . '%';
+    $params[] = $like;
+    $params[] = $like;
+}
+
+if ($mobile !== '') {
+    $where[] = 'dv.mobile LIKE ?';
+    $params[] = '%' . $mobile . '%';
+}
+
+if ($from !== '') {
+    $where[] = 'dv.follow_up_date >= ?';
+    $params[] = $from;
+}
+if ($to !== '') {
+    $where[] = 'dv.follow_up_date <= ?';
+    $params[] = $to;
 }
 
 $whereSql = ' WHERE ' . implode(' AND ', $where);
@@ -51,11 +77,18 @@ $rows = $stmt->fetchAll();
 
 $prevUrl = null;
 $nextUrl = null;
+$baseQuery = [
+    'filter' => $filter,
+    'name' => $name,
+    'mobile' => $mobile,
+    'from' => $from,
+    'to' => $to,
+];
 if ($page > 1) {
-    $prevUrl = BASE_URL . '/reminders.php?' . http_build_query(['filter' => $filter, 'page' => $page - 1]);
+    $prevUrl = BASE_URL . '/reminders.php?' . http_build_query(array_merge($baseQuery, ['page' => $page - 1]));
 }
 if ($page < $totalPages) {
-    $nextUrl = BASE_URL . '/reminders.php?' . http_build_query(['filter' => $filter, 'page' => $page + 1]);
+    $nextUrl = BASE_URL . '/reminders.php?' . http_build_query(array_merge($baseQuery, ['page' => $page + 1]));
 }
 
 $badge = reminders_count($user);
@@ -101,12 +134,34 @@ $badge = reminders_count($user);
         <div class="card-body">
             <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
                 <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?filter=due">مستحقة / متأخرة</a>
-                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?filter=upcoming">قادمة (7 أيام)</a>
-                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?filter=all">الكل</a>
+                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(array_merge($baseQuery, ['filter' => 'due', 'page' => 1]))) ?>">مستحقة / متأخرة</a>
+                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(array_merge($baseQuery, ['filter' => 'upcoming', 'page' => 1]))) ?>">قادمة (7 أيام)</a>
+                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(array_merge($baseQuery, ['filter' => 'all', 'page' => 1]))) ?>">الكل</a>
                 </div>
                 <div class="text-muted small">العدد: <?= (int)$total ?></div>
             </div>
+
+            <form class="row g-2 mt-3" method="get">
+                <input type="hidden" name="filter" value="<?= htmlspecialchars($filter) ?>">
+                <div class="col-md-4">
+                    <input type="text" name="name" value="<?= htmlspecialchars($name) ?>" class="form-control form-control-sm" placeholder="بحث بالاسم (العيادة/الشخص)">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="mobile" value="<?= htmlspecialchars($mobile) ?>" class="form-control form-control-sm" placeholder="بحث بالموبايل">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="from" value="<?= htmlspecialchars($from) ?>" class="form-control form-control-sm" placeholder="من">
+                </div>
+                <div class="col-md-2">
+                    <input type="date" name="to" value="<?= htmlspecialchars($to) ?>" class="form-control form-control-sm" placeholder="إلى">
+                </div>
+                <div class="col-md-1 d-grid">
+                    <button class="btn btn-app btn-sm" type="submit">بحث</button>
+                </div>
+                <div class="col-12 d-flex justify-content-end">
+                    <a class="btn btn-app-outline btn-sm" href="<?= htmlspecialchars(BASE_URL) ?>/reminders.php?<?= htmlspecialchars(http_build_query(['filter' => $filter])) ?>">مسح</a>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -122,7 +177,8 @@ $badge = reminders_count($user);
                         <th>اسم الشخص</th>
                         <th class="text-nowrap">رقم الموبايل</th>
                         <th class="text-nowrap">تاريخ الزيارة</th>
-                        <th class="d-none d-lg-table-cell">ملاحظات</th>
+                        <th class="d-none d-lg-table-cell">ملاحظات الزيارة</th>
+                        <th class="d-none d-lg-table-cell">ملاحظات المتابعة</th>
                         <th class="no-print">الإجراء</th>
                         <th class="no-print text-end">الإجراءات</th>
                     </tr>
@@ -137,6 +193,9 @@ $badge = reminders_count($user);
                             <td><?= htmlspecialchars((string)$r['person_name']) ?></td>
                             <td class="text-nowrap"><?= htmlspecialchars((string)$r['mobile']) ?></td>
                             <td class="text-nowrap"><?= htmlspecialchars((string)$r['visit_date']) ?></td>
+                            <td class="d-none d-lg-table-cell" style="min-width: 260px; max-width: 420px; white-space: normal;">
+                                <?= htmlspecialchars((string)($r['notes'] ?? '')) ?>
+                            </td>
                             <td class="d-none d-lg-table-cell" style="min-width: 260px; max-width: 420px; white-space: normal;">
                                 <?= htmlspecialchars((string)($r['follow_up_action_note'] ?? '')) ?>
                             </td>
@@ -168,7 +227,7 @@ $badge = reminders_count($user);
                     <?php endforeach; ?>
                     <?php if (!$rows): ?>
                         <tr>
-                            <td colspan="10" class="text-muted">لا يوجد بيانات</td>
+                            <td colspan="11" class="text-muted">لا يوجد بيانات</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
