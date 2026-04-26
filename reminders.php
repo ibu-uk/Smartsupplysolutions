@@ -29,12 +29,12 @@ if ($page < 1) {
 }
 
 $baseFrom = " FROM (\n"
-    . "    SELECT r.id AS reminder_id, r.daily_visit_id, r.follow_up_date AS reminder_follow_up_date, r.status AS reminder_status, r.action_note AS reminder_action_note\n"
+    . "    SELECT r.id AS reminder_id, r.daily_visit_id, r.follow_up_date AS reminder_follow_up_date, CONVERT(r.status USING utf8mb4) AS reminder_status, CONVERT(r.action_note USING utf8mb4) AS reminder_action_note\n"
     . "    FROM reminders r\n"
     . "\n"
     . "    UNION ALL\n"
     . "\n"
-    . "    SELECT 0 AS reminder_id, dv.id AS daily_visit_id, dv.follow_up_date AS reminder_follow_up_date, COALESCE(dv.follow_up_status, 'next') AS reminder_status, dv.follow_up_action_note AS reminder_action_note\n"
+    . "    SELECT 0 AS reminder_id, dv.id AS daily_visit_id, dv.follow_up_date AS reminder_follow_up_date, CONVERT(COALESCE(dv.follow_up_status, 'next') USING utf8mb4) AS reminder_status, CONVERT(dv.follow_up_action_note USING utf8mb4) AS reminder_action_note\n"
     . "    FROM daily_visits dv\n"
     . "    WHERE dv.follow_up_date IS NOT NULL\n"
     . "      AND NOT EXISTS (SELECT 1 FROM reminders r2 WHERE r2.daily_visit_id = dv.id)\n"
