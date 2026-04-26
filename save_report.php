@@ -115,6 +115,11 @@ try {
         }
     }
 
+    if ($hasFollowUp) {
+        $rStmt = $pdo->prepare("INSERT INTO reminders (daily_visit_id, follow_up_date, status) VALUES (?, ?, 'next')");
+        $rStmt->execute([$visitId, $follow_up_date]);
+    }
+
     $pdo->commit();
 } catch (Throwable $e) {
     $pdo->rollBack();

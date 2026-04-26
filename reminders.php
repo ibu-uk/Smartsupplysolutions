@@ -28,23 +28,42 @@ if ($page < 1) {
     $page = 1;
 }
 
-$where = ['dv.follow_up_date IS NOT NULL'];
-$statusSql = "(dv.follow_up_status IS NULL OR dv.follow_up_status = 'next')";
+$baseFrom = " FROM (\n"
+    . "    SELECT r.id AS reminder_id, r.daily_visit_id, r.follow_up_date AS reminder_follow_up_date, r.status AS reminder_status, r.action_note AS reminder_action_note\n"
+    . "    FROM reminders r\n"
+    . "\n"
+    . "    UNION ALL\n"
+    . "\n"
+    . "    SELECT 0 AS reminder_id, dv.id AS daily_visit_id, dv.follow_up_date AS reminder_follow_up_date, COALESCE(dv.follow_up_status, 'next') AS reminder_status, dv.follow_up_action_note AS reminder_action_note\n"
+    . "    FROM daily_visits dv\n"
+    . "    WHERE dv.follow_up_date IS NOT NULL\n"
+    . "      AND NOT EXISTS (SELECT 1 FROM reminders r2 WHERE r2.daily_visit_id = dv.id)\n"
+    . ") t\n"
+    . " JOIN daily_visits dv ON dv.id = t.daily_visit_id\n"
+    . " JOIN users u ON u.id = dv.user_id";
+
+$where = ["t.reminder_follow_up_date IS NOT NULL"]; 
+$statusSql = "(t.reminder_status = 'next')";
 if ($status === 'done') {
-    $statusSql = "dv.follow_up_status = 'done'";
+    $statusSql = "t.reminder_status = 'done'";
 } elseif ($status === 'cancelled') {
-    $statusSql = "dv.follow_up_status = 'cancelled'";
+    $statusSql = "t.reminder_status = 'cancelled'";
 } elseif ($status === 'closed') {
-    $statusSql = "dv.follow_up_status IN ('done','cancelled')";
+    $statusSql = "t.reminder_status IN ('done','cancelled')";
 }
 $where[] = $statusSql;
 $params = [];
 
+if (!is_admin($user)) {
+    $where[] = 'dv.user_id = ?';
+    $params[] = (int)$user['id'];
+}
+
 if ($filter === 'due') {
-    $where[] = 'dv.follow_up_date <= CURDATE()';
+    $where[] = 't.reminder_follow_up_date <= CURDATE()';
 } elseif ($filter === 'upcoming') {
-    $where[] = 'dv.follow_up_date > CURDATE()';
-    $where[] = 'dv.follow_up_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)';
+    $where[] = 't.reminder_follow_up_date > CURDATE()';
+    $where[] = 't.reminder_follow_up_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)';
 }
 
 if ($name !== '') {
@@ -60,17 +79,17 @@ if ($mobile !== '') {
 }
 
 if ($from !== '') {
-    $where[] = 'dv.follow_up_date >= ?';
+    $where[] = 't.reminder_follow_up_date >= ?';
     $params[] = $from;
 }
 if ($to !== '') {
-    $where[] = 'dv.follow_up_date <= ?';
+    $where[] = 't.reminder_follow_up_date <= ?';
     $params[] = $to;
 }
 
 $whereSql = ' WHERE ' . implode(' AND ', $where);
 
-$countStmt = db()->prepare('SELECT COUNT(*) AS c FROM daily_visits dv' . $whereSql);
+$countStmt = db()->prepare('SELECT COUNT(*) AS c' . $baseFrom . $whereSql);
 $countStmt->execute($params);
 $total = (int)($countStmt->fetch()['c'] ?? 0);
 
@@ -81,9 +100,10 @@ if ($page > $totalPages) {
 $offset = ($page - 1) * $per_page;
 
 $stmt = db()->prepare(
-    'SELECT dv.*, u.username FROM daily_visits dv JOIN users u ON u.id = dv.user_id' .
-    $whereSql .
-    ' ORDER BY dv.follow_up_date ASC, dv.id DESC LIMIT ? OFFSET ?'
+    'SELECT t.reminder_id, t.daily_visit_id, t.reminder_follow_up_date, t.reminder_status, t.reminder_action_note, dv.*, u.username'
+    . $baseFrom
+    . $whereSql
+    . ' ORDER BY t.reminder_follow_up_date ASC, t.reminder_id DESC, dv.id DESC LIMIT ? OFFSET ?'
 );
 $stmt->execute(array_merge($params, [$per_page, $offset]));
 $rows = $stmt->fetchAll();
@@ -208,15 +228,15 @@ $badge = reminders_count($user);
                     <?php foreach ($rows as $r): ?>
                         <?php
                             $rowClass = '';
-                            if ((string)($r['follow_up_status'] ?? '') === 'done') {
+                            if ((string)($r['reminder_status'] ?? '') === 'done') {
                                 $rowClass = 'table-success';
-                            } elseif ((string)($r['follow_up_status'] ?? '') === 'cancelled') {
+                            } elseif ((string)($r['reminder_status'] ?? '') === 'cancelled') {
                                 $rowClass = 'table-danger';
                             }
                         ?>
                         <tr class="<?= htmlspecialchars($rowClass) ?>">
-                            <td><?= (int)$r['id'] ?></td>
-                            <td class="text-nowrap"><?= htmlspecialchars((string)$r['follow_up_date']) ?></td>
+                            <td><?= (int)$r['reminder_id'] ?></td>
+                            <td class="text-nowrap"><?= htmlspecialchars((string)$r['reminder_follow_up_date']) ?></td>
                             <td><?= htmlspecialchars((string)$r['area']) ?></td>
                             <td><?= htmlspecialchars((string)$r['clinic_name']) ?></td>
                             <td><?= htmlspecialchars((string)$r['person_name']) ?></td>
@@ -226,12 +246,15 @@ $badge = reminders_count($user);
                                 <?= htmlspecialchars((string)($r['notes'] ?? '')) ?>
                             </td>
                             <td class="d-none d-lg-table-cell" style="min-width: 260px; max-width: 420px; white-space: normal;">
-                                <?= htmlspecialchars((string)($r['follow_up_action_note'] ?? '')) ?>
+                                <?= htmlspecialchars((string)($r['reminder_action_note'] ?? '')) ?>
                             </td>
                             <td class="no-print text-end" style="min-width: 320px;">
                                 <?php if ($status === 'active'): ?>
                                     <form method="post" action="<?= htmlspecialchars(BASE_URL) ?>/update_follow_up.php" class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
-                                        <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                                        <?php if ((int)$r['reminder_id'] > 0): ?>
+                                            <input type="hidden" name="reminder_id" value="<?= (int)$r['reminder_id'] ?>">
+                                        <?php endif; ?>
+                                        <input type="hidden" name="daily_visit_id" value="<?= (int)$r['daily_visit_id'] ?>">
                                         <input type="hidden" name="filter" value="<?= htmlspecialchars($filter) ?>">
                                         <input type="hidden" name="status" value="<?= htmlspecialchars($status) ?>">
                                         <input type="hidden" name="name" value="<?= htmlspecialchars($name) ?>">
@@ -239,8 +262,8 @@ $badge = reminders_count($user);
                                         <input type="hidden" name="from" value="<?= htmlspecialchars($from) ?>">
                                         <input type="hidden" name="to" value="<?= htmlspecialchars($to) ?>">
                                         <input type="hidden" name="page" value="<?= (int)$page ?>">
-                                        <input type="date" name="follow_up_date" class="form-control form-control-sm" value="<?= htmlspecialchars((string)$r['follow_up_date']) ?>" style="max-width: 160px;">
-                                        <input type="text" name="note" class="form-control form-control-sm" placeholder="ملاحظة" style="max-width: 220px;" value="<?= htmlspecialchars((string)($r['follow_up_action_note'] ?? '')) ?>">
+                                        <input type="date" name="follow_up_date" class="form-control form-control-sm" value="<?= htmlspecialchars((string)$r['reminder_follow_up_date']) ?>" style="max-width: 160px;">
+                                        <input type="text" name="note" class="form-control form-control-sm" placeholder="ملاحظة" style="max-width: 220px;" value="<?= htmlspecialchars((string)($r['reminder_action_note'] ?? '')) ?>">
                                         <button type="submit" name="action" value="next" class="btn btn-app-outline btn-sm">Next</button>
                                         <button type="submit" name="action" value="done" class="btn btn-app btn-sm">Done</button>
                                         <button type="submit" name="action" value="cancel" class="btn btn-app-outline btn-sm">Cancel</button>

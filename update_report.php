@@ -149,6 +149,22 @@ try {
         }
     }
 
+    if ($fud !== null) {
+        $rSel = $pdo->prepare("SELECT id FROM reminders WHERE daily_visit_id = ? AND status = 'next' ORDER BY id DESC LIMIT 1");
+        $rSel->execute([(int)$id]);
+        $rid = (int)($rSel->fetch()['id'] ?? 0);
+        if ($rid > 0) {
+            $rUpd = $pdo->prepare('UPDATE reminders SET follow_up_date = ? WHERE id = ?');
+            $rUpd->execute([$fud, $rid]);
+        } else {
+            $rIns = $pdo->prepare("INSERT INTO reminders (daily_visit_id, follow_up_date, status) VALUES (?, ?, 'next')");
+            $rIns->execute([(int)$id, $fud]);
+        }
+    } else {
+        $rCancel = $pdo->prepare("UPDATE reminders SET status = 'cancelled', done_at = NULL WHERE daily_visit_id = ? AND status = 'next'");
+        $rCancel->execute([(int)$id]);
+    }
+
     $pdo->commit();
 } catch (Throwable $e) {
     $pdo->rollBack();

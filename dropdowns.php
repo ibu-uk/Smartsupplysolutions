@@ -3,6 +3,30 @@
 declare(strict_types=1);
 
 $DROPDOWNS = [
+    'clinics' => [
+        'Yarrow',
+        'Lumora',
+        'Medical Care',
+        'Cure Clinic',
+        'My Skin - Fahad Al-Mutawaa',
+        'Sherifa Al Awadi',
+        'Al Andalus',
+        'Eterna 3',
+        'Dr Huda Al Safar',
+        'Vogue Clinic 14-Hawally',
+        'Saleh Jurawiy',
+        'Nova',
+        'Sahar Clinic',
+        'Labeuty',
+        'Laboute',
+        'Cure Clinic 8-Shaab',
+        'Bella',
+        'Haydra Clinic',
+        'Germania Clinic',
+        'Global',
+        'Prime',
+        'Jarallah Al-Almani',
+    ],
     'areas' => [
         'العاصمة',
         'حولي',

@@ -87,7 +87,15 @@ if ($showRemindersPopup) {
 
                 <div class="col-md-4">
                     <label class="form-label">اسم العيادة</label>
-                    <input type="text" name="clinic_name" class="form-control" required>
+                    <select id="clinic_name_select" class="form-select" required>
+                        <option value="" selected disabled>اختر</option>
+                        <?php foreach (($DROPDOWNS['clinics'] ?? []) as $v): ?>
+                            <option value="<?= htmlspecialchars((string)$v) ?>"><?= htmlspecialchars((string)$v) ?></option>
+                        <?php endforeach; ?>
+                        <option value="__other__">أخرى...</option>
+                    </select>
+                    <input type="text" id="clinic_name_other" class="form-control mt-2" style="display:none;" placeholder="اسم العيادة" autocomplete="off">
+                    <input type="hidden" name="clinic_name" id="clinic_name" value="">
                 </div>
 
                 <div class="col-md-4">
@@ -180,6 +188,31 @@ if ($showRemindersPopup) {
 <script>
 const dependencies = <?= json_encode($DEPENDENCIES, JSON_UNESCAPED_UNICODE) ?>;
 const allVisitResults = <?= json_encode($DROPDOWNS['visit_result'], JSON_UNESCAPED_UNICODE) ?>;
+
+(() => {
+    const selectEl = document.getElementById('clinic_name_select');
+    const otherEl = document.getElementById('clinic_name_other');
+    const hiddenEl = document.getElementById('clinic_name');
+    if (!selectEl || !otherEl || !hiddenEl) return;
+
+    const sync = () => {
+        const v = (selectEl.value || '').trim();
+        if (v === '__other__') {
+            otherEl.style.display = '';
+            otherEl.required = true;
+            hiddenEl.value = (otherEl.value || '').trim();
+        } else {
+            otherEl.style.display = 'none';
+            otherEl.required = false;
+            otherEl.value = '';
+            hiddenEl.value = v;
+        }
+    };
+
+    selectEl.addEventListener('change', sync);
+    otherEl.addEventListener('input', sync);
+    sync();
+})();
 
 document.getElementById('addContactBtn')?.addEventListener('click', () => {
     const container = document.getElementById('contactsContainer');

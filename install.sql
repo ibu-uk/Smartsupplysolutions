@@ -50,6 +50,21 @@ CREATE TABLE IF NOT EXISTS `daily_visit_contacts` (
   CONSTRAINT `fk_daily_visit_contacts_visit_id` FOREIGN KEY (`daily_visit_id`) REFERENCES `daily_visits` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS `reminders` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `daily_visit_id` BIGINT UNSIGNED NOT NULL,
+  `follow_up_date` DATE NOT NULL,
+  `status` VARCHAR(50) NOT NULL DEFAULT 'next',
+  `done_at` DATETIME NULL,
+  `action_note` TEXT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_reminders_follow_up_date` (`follow_up_date`),
+  KEY `idx_reminders_status` (`status`),
+  KEY `idx_reminders_daily_visit_id` (`daily_visit_id`),
+  CONSTRAINT `fk_reminders_daily_visit_id` FOREIGN KEY (`daily_visit_id`) REFERENCES `daily_visits` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
 INSERT INTO `users` (`username`, `password_hash`, `is_admin`)
 VALUES ('admin', '$2y$10$pvkw62KQArrjPKMfqeUxueZpq3vVfY1Hs6bmZxRIaQxxj0n5MR.a6', 1)
 ON DUPLICATE KEY UPDATE `username` = `username`, `is_admin` = 1;

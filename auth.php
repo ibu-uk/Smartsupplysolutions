@@ -53,11 +53,24 @@ function reminders_count(?array $user = null): int
         return 0;
     }
 
-    $where = "dv.follow_up_date IS NOT NULL AND dv.follow_up_date <= CURDATE() AND (dv.follow_up_status IS NULL OR dv.follow_up_status = 'next')";
-    $params = [];
+    $sql = "SELECT COUNT(*) AS c FROM (
+                SELECT r.id
+                FROM reminders r
+                JOIN daily_visits dv ON dv.id = r.daily_visit_id
+                WHERE r.follow_up_date <= CURDATE() AND r.status = 'next'
 
-    $stmt = db()->prepare('SELECT COUNT(*) AS c FROM daily_visits dv WHERE ' . $where);
-    $stmt->execute($params);
+                UNION ALL
+
+                SELECT dv.id
+                FROM daily_visits dv
+                WHERE dv.follow_up_date IS NOT NULL
+                  AND dv.follow_up_date <= CURDATE()
+                  AND (dv.follow_up_status IS NULL OR dv.follow_up_status = 'next')
+                  AND NOT EXISTS (SELECT 1 FROM reminders r2 WHERE r2.daily_visit_id = dv.id)
+            ) x";
+
+    $stmt = db()->prepare($sql);
+    $stmt->execute();
     return (int)($stmt->fetch()['c'] ?? 0);
 }
 
